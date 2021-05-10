@@ -44,6 +44,8 @@ class Module {
     public function loadModule(string $moduleName, string $moduleAction = null) {
         $this->moduleName = $moduleName;
 
+        $this->loadDefaultController();
+
         if ($this->moduleExists()) {
             include $this->moduleFile;
             $this->loadController($moduleName);
@@ -57,8 +59,6 @@ class Module {
             $module->loadModule('error');
             return;
         }
-
-        $this->loadDefaultController();
     }
 
     //

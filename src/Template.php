@@ -26,7 +26,7 @@ class Template {
     }
 
     /**
-    * Check is the requested view exists, and passes it onto the renderer.
+    * Check if the requested view exists, and passes it onto the renderer.
     *
     * @param string $viewDir View directory of the module
     * @param string $moduleName Name of the module -- Will be used as view name
@@ -51,13 +51,6 @@ class Template {
         }
 
         $this->smarty->assign('root', $this->config['site_root']);
-
-        if ($this->auth->loggedIn()) {
-            $this->smarty->assign('username', $this->auth->getUsername());
-        }
-
-        $custom_resources = '';
-
         $this->smarty->display($file);
     }
 }
