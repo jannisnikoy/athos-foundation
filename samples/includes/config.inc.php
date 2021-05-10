@@ -9,7 +9,7 @@
 
     $config = array();
     $config['site_root'] = '';
-    $config['module_dir'] = 'modules';
+    $config['module_dirs'] = array('../modules/');
 
     $config['db'] = array(
         'development' => array(

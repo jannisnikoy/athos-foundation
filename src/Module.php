@@ -48,8 +48,10 @@ class Module {
             include $this->moduleFile;
             $this->loadController($moduleName);
 
-            $template = new Template();
-            $template->loadTemplate($this->viewDir, $moduleName, $moduleAction);
+            if (isset($this->viewDir)) {
+                $template = new Template();
+                $template->loadTemplate($this->viewDir, $moduleName, $moduleAction);
+            }
         } else {
             $module = new Module();
             $module->loadModule('error');
@@ -70,20 +72,21 @@ class Module {
     * @return bool Returns true if the requested module is found
     */
     private function moduleExists(): bool {
-        $files = array(
-            '../' . $this->config['module_dir']  . '/' . strtolower($this->moduleName) . '/',
-            '../modules/'
-        );
-
-        foreach ($files as $directory) {
-            if (file_exists($directory . '/views/' . strtolower($this->moduleName) . '.html')) {
-                $this->viewDir = $directory . '/views/';
+        foreach ($this->config['module_dirs'] as $directory) {
+            if (file_exists($directory . strtolower($this->moduleName) . '/views/' . strtolower($this->moduleName) . '.html')) {
+                $this->viewDir = $directory . strtolower($this->moduleName) . '/views/';
             }
 
-            $moduleFile = $directory . '/controllers/' . ucfirst($this->moduleName) . 'Controller.php';
-            if (file_exists($moduleFile)) {
-                $this->moduleDir = $directory .  '/controllers/';
-                $this->moduleFile = $moduleFile;
+            $moduleControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst($this->moduleName) . 'Controller.php';
+            $standaloneControllerFile = $directory . ucfirst($this->moduleName) . 'Controller.php';
+
+            if (file_exists($moduleControllerFile)) {
+                $this->moduleDir = $directory .  strtolower($this->moduleName) . '/controllers/';
+                $this->moduleFile = $moduleControllerFile;
+                return true;
+            } else if (file_exists($standaloneControllerFile)) {
+                $this->moduleDir = $directory;
+                $this->moduleFile = $standaloneControllerFile;
                 return true;
             }
         }
