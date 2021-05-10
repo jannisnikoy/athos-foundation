@@ -1,0 +1,23 @@
+{
+    "name": "mobles/athos-foundation",
+    "type": "library",
+    "description": "Athos-Foundation",
+    "homepage": "https://mobles.nl",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jannis Nikoy",
+            "email": "info@mobles.nl",
+            "homepage": "http://mobles.nl",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Athos\\Foundation\\": "src/"
+        }
+    },
+    "require": {
+        "smarty/smarty": "^3.1"
+    }
+}
