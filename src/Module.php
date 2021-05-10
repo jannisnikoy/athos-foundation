@@ -51,7 +51,8 @@ class Module {
             $template = new Template();
             $template->loadTemplate($this->viewDir, $moduleName, $moduleAction);
         } else {
-            new Module('error');
+            $module = new Module();
+            $module->loadModule('error');
             return;
         }
 
