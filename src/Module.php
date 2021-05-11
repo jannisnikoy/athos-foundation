@@ -133,7 +133,7 @@ class Module {
     */
     private function loadDefaultController() {
         if(file_exists('../modules/DefaultController.php')) {
-            include '../modules/DefaultController.php';
+            require_once '../modules/DefaultController.php';
             $this->loadController('Default', null, false);
         }
     }
