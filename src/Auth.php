@@ -13,17 +13,49 @@ namespace Athos\Foundation;
 */
 
 class Auth {
+    private $config;
     private $db;
     private $loggedIn;
+    private $ttl;
 
     function __construct() {
-        global $db;
+        global $config, $db;
 
+        $this->config = $config;
         $this->db = $db;
+        $this->ttl = 86400;
 
-        if (Session::valueForKey('APL_SESSION_ID')) {
-            $this->validateSession(Session::valueForKey('APL_SESSION_ID'));
+        if (isset($this->config['session_ttl']) && is_int($this->config['session_ttl'])) {
+            $this->ttl = $this->config['session_ttl'];
         }
+
+        if ($this->attemptSessionLogin()) {
+            return;
+        }
+
+        if ($this->shouldUseCookies()) {
+            $this->attemptCookieLogin();
+        }
+    }
+
+
+    /**
+    * Checks if a user account exists and registers if not.
+    *
+    * @param string $username
+    * @param string $password
+    * @return bool true if registration was succesful
+    */
+    public function register(string $username, string $password): bool {
+        $this->db->query('SELECT * FROM apl_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+
+        if ($this->db->hasRows()) {
+            return false;
+        }
+
+        $this->db->query('INSERT INTO apl_users(username, password) VALUES(?, ?)', $username, hash('sha256', $password));
+
+        return $this->attemptLogin($username, $password);
     }
 
     /**
@@ -43,11 +75,12 @@ class Auth {
     public function logout() {
         $this->loggedIn = false;
 
-        if (Session::valueForKey('APL_SESSION_ID')) {
-            $this->db->query("UPDATE apl_sessions SET isActive=0 WHERE id=?", Session::valueForKey('APL_SESSION_ID'));
+        if (Session::valueForKey('ATHOS_SESSION_ID')) {
+            $this->db->query('UPDATE apl_sessions SET isActive=0 WHERE id=?', Session::valueForKey('ATHOS_SESSION_ID'));
         }
 
         Session::destroySession();
+        setcookie('athos', '.', time() - $this->ttl, '/', 'localhost');
     }
 
     /**
@@ -60,7 +93,15 @@ class Auth {
             return true;
         }
 
-        return $this->attemptSessionLogin();
+        if ($this->attemptSessionLogin()) {
+            return true;
+        }
+
+        if ($this->shouldUseCookies()) {
+            return $this->attemptCookieLogin();
+        }
+
+        return false;
     }
 
     /**
@@ -72,9 +113,9 @@ class Auth {
     */
     public function getUsername(): string {
         if ($this->loggedIn) {
-            $sessionId = Session::valueForKey('APL_SESSION_ID');
+            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query("SELECT username FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)", $sessionId);
+            $this->db->query('SELECT username FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)', $sessionId);
             return ucfirst($this->db->getRow()->username);
         }
 
@@ -90,9 +131,9 @@ class Auth {
     */
     public function getUserCredentials(): string {
         if ($this->loggedIn) {
-            $sessionId = Session::valueForKey('APL_SESSION_ID');
+            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query("SELECT role FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)", $sessionId);
+            $this->db->query('SELECT role FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)', $sessionId);
             return $this->db->getRow()->role;
         }
 
@@ -106,14 +147,33 @@ class Auth {
     /**
     * Attempts to validate a user session if a session ID is found.
     *
+    * @see attemptCookieLogin()
     * @return bool true if a valid session is found.
     */
     private function attemptSessionLogin(): bool {
-        if (Session::hasValueForKey('APL_SESSION_ID')) {
-			return $this->validateSession(Session::valueForKey('APL_SESSION_ID'));
-		}
+        if (Session::hasValueForKey('ATHOS_SESSION_ID')) {
+            return $this->validateSession(Session::valueForKey('ATHOS_SESSION_ID'));
+        }
 
-		return false;
+        return false;
+    }
+
+    /**
+    * Attempts to validate a user session by cookie
+    *
+    * @see attemptSessionLogin()
+    * @return bool true if a valid session is found.
+    */
+    private function attemptCookieLogin() {
+        if (isset($_COOKIE['athos']) && is_string($_COOKIE['athos'])) {
+            $s = json_decode($_COOKIE['athos'], true);
+
+            if (isset($s['ATHOS_SESSION_ID'])) {
+                return $this->validateSession($s['ATHOS_SESSION_ID']);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -124,7 +184,7 @@ class Auth {
     * @param string $password
     */
     private function attemptLogin(string $username, string $password): bool {
-        $this->db->query("SELECT * FROM apl_users WHERE username=? AND password=?", $username, hash('sha256', $password));
+        $this->db->query('SELECT * FROM apl_users WHERE username=? AND password=?', $username, hash('sha256', $password));
 
         if (!$this->db->hasRows()) {
             $this->loggedIn = false;
@@ -135,7 +195,7 @@ class Auth {
 
         $sessionId = md5($row->username . $row->password . time());
 
-        $this->db->query("INSERT INTO apl_sessions(id, userId, expiresAt) VALUES(?, ?, FROM_UNIXTIME(?))", $sessionId, $row->id, time()+86400);
+        $this->db->query('INSERT INTO apl_sessions(id, userId, expiresAt) VALUES(?, ?, FROM_UNIXTIME(?))', $sessionId, $row->id, time()+$this->ttl);
         $this->storeSessionData($sessionId);
 
         $this->loggedIn = true;
@@ -150,10 +210,10 @@ class Auth {
     * @return bool True if the session was validated
     */
     private function validateSession(string $sessionId): bool {
-        $this->db->query("SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW()", $sessionId);
+        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW()', $sessionId);
 
         if ($this->db->hasRows()) {
-            $this->db->query("UPDATE apl_sessions SET lastUpdatedAt=NOW() WHERE id=?", $sessionId);
+            $this->db->query('UPDATE apl_sessions SET lastUpdatedAt=NOW() WHERE id=?', $sessionId);
             $this->loggedIn = true;
         } else {
             $this->logout();
@@ -163,12 +223,33 @@ class Auth {
     }
 
     /**
-    * Stores the sessionID in a PHP session.
+    * Stores the sessionID in a PHP session and cookie.
     *
     * @param string $sessionId User session ID
     */
     private function storeSessionData(string $sessionId) {
-        Session::setValueForKey('APL_SESSION_ID', $sessionId);
+        Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
+
+        if ($this->shouldUseCookies()) {
+            $s = json_encode(array('ATHOS_SESSION_ID' => $sessionId));
+            setcookie('athos', $s, time()+$this->ttl);
+        }
+    }
+
+    /**
+    * Determines if cookies should be used.
+    * Can be set using $config['use_cookies'].
+    *
+    * Default: true
+    *
+    * @return bool true if cookies should be used.
+    */
+    private function shouldUseCookies(): bool {
+        if (isset($this->config['use_cookies'])) {
+            return $this->config['use_cookies'];
+        }
+
+        return true;
     }
 }
 ?>

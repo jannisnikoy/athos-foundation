@@ -116,10 +116,10 @@ class Database {
     * @return bool true if connection is succesful.
     */
     private function connect(): bool {
-        $this->db = new \PDO("mysql:host=".$this->host.";dbname=".$this->name, $this->user, $this->pass);
+        $this->db = new \PDO('mysql:host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass);
 
         if (!$this->db) {
-            throw new Error("An error occurred while connecting to the database: >>");
+            throw new Error('An error occurred while connecting to the database: >>');
         }
 
         return $this->isConnected();

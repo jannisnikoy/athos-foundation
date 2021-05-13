@@ -1,4 +1,4 @@
-CREATE TABLE `sessions` (
+CREATE TABLE `apl_sessions` (
   `id` varchar(32) NOT NULL PRIMARY KEY,
   `userId` int NOT NULL,
   `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -7,7 +7,7 @@ CREATE TABLE `sessions` (
   `isActive` tinyint(1) NOT NULL DEFAULT '1'
 );
 
-CREATE TABLE `users` (
+CREATE TABLE `apl_users` (
   `id` int NOT NULL PRIMARY KEY AUTO_INCREMENT,
   `username` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
   `password` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
