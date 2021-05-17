@@ -112,12 +112,12 @@ class Module {
             $acceptedCredentials = $controller->acceptedCredentials();
 
             if ($requiresCredentials && isset($_GET) && $_GET['rt'] != 'login' && !$this->auth->loggedIn()) {
-               header("Location: /?rt=login");
+               header('Location: ' . $this->config['site_root'] . '/login');
                return;
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {
-               header("Location: /unauthorized");
+                header('Location: ' . $this->config['site_root'] . '/unauthorized');
                return;
             }
         }
