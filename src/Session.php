@@ -64,7 +64,9 @@ class Session {
     * Completely destroys the user session
     */
     public static function destroySession() {
-        session_destroy();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_destroy();
+        }
     }
 }
 ?>

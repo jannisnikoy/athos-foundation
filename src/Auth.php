@@ -210,10 +210,11 @@ class Auth {
     * @return bool True if the session was validated
     */
     private function validateSession(string $sessionId): bool {
-        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW()', $sessionId);
+        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW() AND active=1', $sessionId);
 
         if ($this->db->hasRows()) {
             $this->db->query('UPDATE apl_sessions SET lastUpdatedAt=NOW() WHERE id=?', $sessionId);
+            Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
             $this->loggedIn = true;
         } else {
             $this->logout();
