@@ -20,13 +20,21 @@ class Config {
     private $dbPass;
     private $dbName;
 
-    public function __construct() {
-        global $config;
+    private $version;
 
-        $this->config = $config;
-        $stage = $this->currentStage();
+    public function __construct($configFile) {
+        if(!isset($configFile) || !file_exists($configFile)) {
+            echo '[ATHOS] Configuration file missing';
+            exit();
+        }
 
-        switch (Config::currentStage()) {
+        $this->config = json_decode(file_get_contents($configFile));
+
+        if(file_exists(SITE_PATH . '/version.json')) {
+            $this->version = json_decode(file_get_contents(SITE_PATH . '/version.json'));
+        }
+
+        switch ($this->currentStage()) {
             case 'development':
                 $this->development();
                 break;
@@ -42,13 +50,25 @@ class Config {
         }
     }
 
+    public function addModuleDir(string $directory) {
+        array_push($this->config->module_dirs, $directory);
+    }
+
     /**
     * Retrieves configuration properties.
     *
     * @return string Property value
     */
     public function get(string $key) {
-        return $this->$key;
+        if(isset($this->config->$key)) {
+            return $this->config->$key;
+        }
+        
+        if(isset($this->$key)) {
+            return $this->$key;
+        }
+
+        return null;
     }
 
     //
@@ -63,10 +83,10 @@ class Config {
         ini_set('display_errors', '1');
         ini_set('error_reporting', E_ALL);
 
-        $this->dbHost = $this->config['db']['development']['host'];
-        $this->dbUser = $this->config['db']['development']['user'];
-        $this->dbPass = $this->config['db']['development']['pass'];
-        $this->dbName = $this->config['db']['development']['name'];
+        $this->dbHost = $this->config->db->development->host;
+        $this->dbUser = $this->config->db->development->user;
+        $this->dbPass = $this->config->db->development->pass;
+        $this->dbName = $this->config->db->development->name;
     }
 
     /**
@@ -77,10 +97,10 @@ class Config {
         ini_set('display_errors', '1');
         ini_set('error_reporting', E_ALL);
 
-        $this->dbHost = $this->config['db']['test']['host'];
-        $this->dbUser = $this->config['db']['test']['user'];
-        $this->dbPass = $this->config['db']['test']['pass'];
-        $this->dbName = $this->config['db']['test']['name'];
+        $this->dbHost = $this->config->db->test->host;
+        $this->dbUser = $this->config->db->test->user;
+        $this->dbPass = $this->config->db->test->pass;
+        $this->dbName = $this->config->db->test->name;
     }
 
     /**
@@ -89,12 +109,12 @@ class Config {
     */
     private function production() {
         ini_set('display_errors', '0');
-        ini_set('error_reporting', 0);
+        ini_set('error_reporting',  E_ALL);
 
-        $this->dbHost = $this->config['db']['production']['host'];
-        $this->dbUser = $this->config['db']['production']['user'];
-        $this->dbPass = $this->config['db']['production']['pass'];
-        $this->dbName = $this->config['db']['production']['name'];
+        $this->dbHost = $this->config->db->production->host;
+        $this->dbUser = $this->config->db->production->user;
+        $this->dbPass = $this->config->db->production->pass;
+        $this->dbName = $this->config->db->production->name;
     }
 
     /**
@@ -103,14 +123,12 @@ class Config {
     *
     * @return string environment name, or false if not found.
     */
-    public static function currentStage() {
-        global $config;
-
-        if (in_array($_SERVER['HTTP_HOST'], $config['domains']['production'])) {
+    public function currentStage() {
+        if (in_array($_SERVER['HTTP_HOST'], $this->config->domains->production)) {
             return 'production';
-        } elseif(in_array($_SERVER['HTTP_HOST'], $config['domains']['development'])) {
+        } elseif(in_array($_SERVER['HTTP_HOST'], $this->config->domains->development)) {
             return 'development';
-        } elseif(in_array($_SERVER['HTTP_HOST'], $config['domains']['test'])) {
+        } elseif(in_array($_SERVER['HTTP_HOST'], $this->config->domains->test)) {
             return 'test';
         }
 

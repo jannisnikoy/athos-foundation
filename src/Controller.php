@@ -28,8 +28,13 @@ class Controller {
         $this->smarty = $smarty;
         $this->headers = getallheaders();
 
-        if (method_exists($this, 'defaultAction')) {
-            $this->defaultAction();
+        if (isset($_GET['action']) && method_exists($this, $_GET['action'].'Action')) {
+            $action = strtolower($_GET['action']) . 'Action';
+            $this->$action();
+        } else {
+            if (method_exists($this, 'defaultAction')) {
+                $this->defaultAction();
+            }
         }
     }
 

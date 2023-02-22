@@ -72,7 +72,7 @@ class Module {
     * @return bool Returns true if the requested module is found
     */
     private function moduleExists(): bool {
-        foreach ($this->config['module_dirs'] as $directory) {
+        foreach ($this->config->get('module_dirs') as $directory) {
             if (file_exists($directory . strtolower($this->moduleName) . '/views/' . strtolower($this->moduleName) . '.html')) {
                 $this->viewDir = $directory . strtolower($this->moduleName) . '/views/';
             }
@@ -112,13 +112,14 @@ class Module {
             $acceptedCredentials = $controller->acceptedCredentials();
 
             if ($requiresCredentials && isset($_GET) && $_GET['rt'] != 'login' && !$this->auth->loggedIn()) {
-               header('Location: ' . $this->config['site_root'] . '/login');
+               header('Location: ' . $this->config->get('site_root') . '/login');
                return;
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {
-                header('Location: ' . $this->config['site_root'] . '/unauthorized');
-               return;
+                $module = new Module();
+                $module->loadModule('unauthorized');
+                exit();
             }
         }
 
@@ -132,8 +133,8 @@ class Module {
     * Attempts to find the default controller and loads it if found.
     */
     private function loadDefaultController() {
-        if(file_exists('../modules/DefaultController.php')) {
-            require_once '../modules/DefaultController.php';
+        if(file_exists('../system/modules/DefaultController.php')) {
+            require_once '../system/modules/DefaultController.php';
             $this->loadController('Default', null, false);
         }
     }

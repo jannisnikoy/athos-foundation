@@ -13,6 +13,8 @@ namespace Athos\Foundation;
 */
 
 class Database {
+    private $config;
+
     private $db;
     private $host;
     private $user;
@@ -24,17 +26,15 @@ class Database {
     /**
     * Initializes Database with the provided credentials.
     *
-    * @param string $host
-    * @param string $username
-    * @param string $password
-    * @param string $database
     */
-    function __construct(string $host, string $username, string $password, string $database) {
+    function __construct() {
+        global $config;
+
         $this->db = false;
-        $this->host = $host;
-        $this->user = $username;
-        $this->pass = $password;
-        $this->name = $database;
+        $this->host = $config->get('dbHost');
+        $this->user = $config->get('dbUser');
+        $this->pass = $config->get('dbPass');
+        $this->name = $config->get('dbName');
     }
 
     /**

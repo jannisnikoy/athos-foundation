@@ -1,0 +1,30 @@
+{
+  "site_root": "",
+  "module_dirs": ["../modules/"],
+  "cache_dir": "../cache/",
+  "domains": {
+    "development": ["localhost"],
+    "test": ["test.example.com"],
+    "production": ["example.com"]
+  },
+  "db": {
+    "development": {
+      "host": "localhost",
+      "user": "username",
+      "pass": "password",
+      "name": "database"
+    },
+    "test": {
+      "host": "localhost",
+      "user": "username",
+      "pass": "password",
+      "name": "database"
+    },
+    "production": {
+      "host": "localhost",
+      "user": "username",
+      "pass": "password",
+      "name": "database"
+    }
+  }
+}
