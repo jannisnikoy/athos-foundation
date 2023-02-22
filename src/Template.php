@@ -50,7 +50,7 @@ class Template {
             return;
         }
 
-        $this->smarty->assign('root', $this->config['site_root']);
+        $this->smarty->assign('root', $this->config->get('site_root'));
         $this->smarty->display($file);
     }
 }

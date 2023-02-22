@@ -25,8 +25,8 @@ class Auth {
         $this->db = $db;
         $this->ttl = 86400;
 
-        if (isset($this->config['session_ttl']) && is_int($this->config['session_ttl'])) {
-            $this->ttl = $this->config['session_ttl'];
+        if ($this->config->get('session_ttl') != null && is_int($this->config->get('session_ttl'))) {
+            $this->ttl = $this->config->get('session_ttl');
         }
 
         if ($this->attemptSessionLogin()) {
@@ -210,7 +210,7 @@ class Auth {
     * @return bool True if the session was validated
     */
     private function validateSession(string $sessionId): bool {
-        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW() AND active=1', $sessionId);
+        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW() AND isActive=1', $sessionId);
 
         if ($this->db->hasRows()) {
             $this->db->query('UPDATE apl_sessions SET lastUpdatedAt=NOW() WHERE id=?', $sessionId);
@@ -246,8 +246,8 @@ class Auth {
     * @return bool true if cookies should be used.
     */
     private function shouldUseCookies(): bool {
-        if (isset($this->config['use_cookies'])) {
-            return $this->config['use_cookies'];
+        if ($this->config->get('use_cookies') != null) {
+            return $this->config->get('use_cookies');
         }
 
         return true;
