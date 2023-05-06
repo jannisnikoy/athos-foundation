@@ -109,7 +109,7 @@ class Config {
     */
     private function production() {
         ini_set('display_errors', '0');
-        ini_set('error_reporting',  E_ALL);
+        ini_set('error_reporting',  '0');
 
         $this->dbHost = $this->config->db->production->host;
         $this->dbUser = $this->config->db->production->user;
