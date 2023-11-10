@@ -43,12 +43,13 @@ class Module {
     */
     public function loadModule(string $moduleName, string $moduleAction = null) {
         $this->moduleName = $moduleName;
+        $this->moduleAction = $moduleAction;
 
         $this->loadDefaultController();
 
         if ($this->moduleExists()) {
             include $this->moduleFile;
-            $this->loadController($moduleName);
+            $this->loadController($moduleName, $moduleAction);
 
             if (isset($this->viewDir)) {
                 $template = new Template();
@@ -77,8 +78,9 @@ class Module {
                 $this->viewDir = $directory . strtolower($this->moduleName) . '/views/';
             }
 
-            $moduleControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst($this->moduleName) . 'Controller.php';
+            $moduleControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst(isset($this->moduleAction) ? $this->moduleAction : $this->moduleName) . 'Controller.php';
             $standaloneControllerFile = $directory . ucfirst($this->moduleName) . 'Controller.php';
+            $mainControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst($this->moduleName) . 'Controller.php';
 
             if (file_exists($moduleControllerFile)) {
                 $this->moduleDir = $directory .  strtolower($this->moduleName) . '/controllers/';
@@ -87,6 +89,10 @@ class Module {
             } else if (file_exists($standaloneControllerFile)) {
                 $this->moduleDir = $directory;
                 $this->moduleFile = $standaloneControllerFile;
+                return true;
+            } else if(file_exists($mainControllerFile)) {
+                $this->moduleDir = $directory;
+                $this->moduleFile = $mainControllerFile;
                 return true;
             }
         }
@@ -104,14 +110,23 @@ class Module {
     * @param bool $checkCredentials Allows for an override of credential checks
     */
     private function loadController(string $moduleName, string $moduleAction = null, bool $checkCredentials = true) {
-        $controller = ucfirst($moduleName) . 'Controller';
-        $controller = new $controller();
+        if(class_exists(ucfirst(isset($moduleAction) ? $moduleAction : $moduleName) . 'Controller')) {
+            $controller = ucfirst(isset($moduleAction) ? $moduleAction : $moduleName) . 'Controller';
+            $controller = new $controller();
+        }else if(class_exists(ucfirst($moduleName) . 'Controller')) {
+            $controller = ucfirst($moduleName) . 'Controller';
+            $controller = new $controller();
+        } else {
+            $module = new Module();
+            $module->loadModule('error');
+            exit();
+        }
 
         if ($checkCredentials) {
             $requiresCredentials = $controller->requiresCredentials();
             $acceptedCredentials = $controller->acceptedCredentials();
 
-            if ($requiresCredentials && isset($_GET) && $_GET['rt'] != 'login' && !$this->auth->loggedIn()) {
+            if ($requiresCredentials && $moduleName != 'login' && !$this->auth->loggedIn()) {
                header('Location: ' . $this->config->get('site_root') . '/login');
                return;
             }
@@ -121,11 +136,6 @@ class Module {
                 $module->loadModule('unauthorized');
                 exit();
             }
-        }
-
-        if ($moduleAction != null) {
-            $moduleAction = $moduleAction . 'Action';
-            $controller->$moduleAction();
         }
     }
 

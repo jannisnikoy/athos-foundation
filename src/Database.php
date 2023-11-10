@@ -22,6 +22,8 @@ class Database {
     private $name;
     private $result;
     private $statement;
+    private $provider;
+    private $isConnected = false;
 
     /**
     * Initializes Database with the provided credentials.
@@ -35,6 +37,7 @@ class Database {
         $this->user = $config->get('dbUser');
         $this->pass = $config->get('dbPass');
         $this->name = $config->get('dbName');
+        $this->provider = $config->get('db_provider');
     }
 
     /**
@@ -47,7 +50,7 @@ class Database {
     * @return array Results of the query
     */
     public function query(string $sql): array {
-        if (!$this->isConnected()) $this->connect();
+        if (!$this->isConnected) $this->connect();
 
         $this->statement = $this->db->prepare($sql);
         $params = func_get_args();
@@ -116,13 +119,14 @@ class Database {
     * @return bool true if connection is succesful.
     */
     private function connect(): bool {
-        $this->db = new \PDO('mysql:host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass);
+        $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass);
 
         if (!$this->db) {
             throw new Error('An error occurred while connecting to the database: >>');
         }
 
-        return $this->isConnected();
+        $this->isConnected = true;
+        return true;
     }
 
     /**
@@ -130,15 +134,6 @@ class Database {
     */
     private function disconnect() {
         $this->db->close();
-    }
-
-    /**
-    * Determines whether a database connection is active.
-    *
-    * @return true if a connection is present.
-    */
-    private function isConnected(): bool {
-        return is_resource($this->db) && get_resource_type($this->db) == 'mysql link';
     }
 }
 ?>

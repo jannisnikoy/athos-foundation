@@ -84,7 +84,11 @@ class Config {
         ini_set('error_reporting', E_ALL);
 
         $this->dbHost = $this->config->db->development->host;
-        $this->dbUser = $this->config->db->development->user;
+        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
+            $this->dbUser = $this->config->db->development->adminUser;
+        } else {
+            $this->dbUser = $this->config->db->development->user;
+        }
         $this->dbPass = $this->config->db->development->pass;
         $this->dbName = $this->config->db->development->name;
     }
@@ -94,11 +98,15 @@ class Config {
     * Errors and exceptions will be displayed.
     */
     private function test() {
-        ini_set('display_errors', '1');
+        ini_set('display_errors', '0');
         ini_set('error_reporting', E_ALL);
 
         $this->dbHost = $this->config->db->test->host;
-        $this->dbUser = $this->config->db->test->user;
+        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
+            $this->dbUser = $this->config->db->test->adminUser;
+        } else {
+            $this->dbUser = $this->config->db->test->user;
+        }
         $this->dbPass = $this->config->db->test->pass;
         $this->dbName = $this->config->db->test->name;
     }
@@ -109,10 +117,14 @@ class Config {
     */
     private function production() {
         ini_set('display_errors', '0');
-        ini_set('error_reporting',  '0');
+        ini_set('error_reporting',  0);
 
         $this->dbHost = $this->config->db->production->host;
-        $this->dbUser = $this->config->db->production->user;
+        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
+            $this->dbUser = $this->config->db->production->adminUser;
+        } else {
+            $this->dbUser = $this->config->db->production->user;
+        }
         $this->dbPass = $this->config->db->production->pass;
         $this->dbName = $this->config->db->production->name;
     }

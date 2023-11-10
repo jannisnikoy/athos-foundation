@@ -47,13 +47,13 @@ class Auth {
     * @return bool true if registration was succesful
     */
     public function register(string $username, string $password): bool {
-        $this->db->query('SELECT * FROM apl_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+        $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
 
         if ($this->db->hasRows()) {
             return false;
         }
 
-        $this->db->query('INSERT INTO apl_users(username, password) VALUES(?, ?)', $username, hash('sha256', $password));
+        $this->db->query('INSERT INTO exm_users(username, password) VALUES(?, ?)', $username, hash('sha256', $password));
 
         return $this->attemptLogin($username, $password);
     }
@@ -76,7 +76,7 @@ class Auth {
         $this->loggedIn = false;
 
         if (Session::valueForKey('ATHOS_SESSION_ID')) {
-            $this->db->query('UPDATE apl_sessions SET isActive=0 WHERE id=?', Session::valueForKey('ATHOS_SESSION_ID'));
+            $this->db->query('UPDATE exm_sessions SET is_active=false WHERE id=?', Session::valueForKey('ATHOS_SESSION_ID'));
         }
 
         Session::destroySession();
@@ -115,7 +115,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT username FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT username FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
             return ucfirst($this->db->getRow()->username);
         }
 
@@ -133,7 +133,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT role FROM apl_users WHERE id=(SELECT userId FROM apl_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT role FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
             return $this->db->getRow()->role;
         }
 
@@ -184,7 +184,7 @@ class Auth {
     * @param string $password
     */
     private function attemptLogin(string $username, string $password): bool {
-        $this->db->query('SELECT * FROM apl_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+        $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
 
         if (!$this->db->hasRows()) {
             $this->loggedIn = false;
@@ -195,7 +195,7 @@ class Auth {
 
         $sessionId = md5($row->username . $row->password . time());
 
-        $this->db->query('INSERT INTO apl_sessions(id, userId, expiresAt) VALUES(?, ?, FROM_UNIXTIME(?))', $sessionId, $row->id, time()+$this->ttl);
+        $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, to_timestamp(?))', $sessionId, $row->id, time()+$this->ttl);
         $this->storeSessionData($sessionId);
 
         $this->loggedIn = true;
@@ -210,10 +210,10 @@ class Auth {
     * @return bool True if the session was validated
     */
     private function validateSession(string $sessionId): bool {
-        $this->db->query('SELECT * FROM apl_sessions WHERE id=? AND expiresAt > NOW() AND isActive=1', $sessionId);
+        $this->db->query('SELECT * FROM exm_sessions WHERE id=? AND expires_at > NOW() AND is_active=true', ...array($sessionId));
 
         if ($this->db->hasRows()) {
-            $this->db->query('UPDATE apl_sessions SET lastUpdatedAt=NOW() WHERE id=?', $sessionId);
+            $this->db->query('UPDATE exm_sessions SET last_updated_at=NOW() WHERE id=?', $sessionId);
             Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
             $this->loggedIn = true;
         } else {
