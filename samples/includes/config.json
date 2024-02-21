@@ -1,30 +1,40 @@
 {
-  "site_root": "",
-  "module_dirs": ["../modules/"],
-  "cache_dir": "../cache/",
-  "domains": {
-    "development": ["localhost"],
-    "test": ["test.example.com"],
-    "production": ["example.com"]
+  "site_root": "\/exm",
+  "module_dirs": [
+      "..\/modules\/"
+  ],
+  "cache_dir": "..\/cache\/",
+  "use_cookies": true,
+  "product_name": "athos-foundation",
+  "db_provider": "pgsql",
+  "disabled_modules": [
+  ],
+  "environments": {
+      "development": {
+          "error_reporting": true,
+          "domains": [
+              "localhost:8080"
+          ],
+          "db": {
+              "host": "localhost",
+              "user": "username",
+              "pass": "password",
+              "name": "database"
+          }
+      },
+      "production": {
+          "error_reporting": false,
+          "domains": [
+              "example.com"
+          ],
+          "db": {
+              "host": "localhost",
+              "user": "username",
+              "pass": "password",
+              "name": "database"
+          }
+      }
   },
-  "db": {
-    "development": {
-      "host": "localhost",
-      "user": "username",
-      "pass": "password",
-      "name": "database"
-    },
-    "test": {
-      "host": "localhost",
-      "user": "username",
-      "pass": "password",
-      "name": "database"
-    },
-    "production": {
-      "host": "localhost",
-      "user": "username",
-      "pass": "password",
-      "name": "database"
-    }
+  "keys": {
   }
 }

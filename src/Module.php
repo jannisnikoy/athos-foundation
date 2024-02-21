@@ -143,8 +143,8 @@ class Module {
     * Attempts to find the default controller and loads it if found.
     */
     private function loadDefaultController() {
-        if(file_exists('../system/modules/DefaultController.php')) {
-            require_once '../system/modules/DefaultController.php';
+        if(file_exists(SITE_PATH . '/modules/DefaultController.php')) {
+            require_once SITE_PATH.'/modules/DefaultController.php';
             $this->loadController('Default', null, false);
         }
     }

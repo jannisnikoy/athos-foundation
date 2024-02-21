@@ -21,6 +21,7 @@ class Config {
     private $dbName;
 
     private $version;
+    private $stage;
 
     public function __construct($configFile) {
         if(!isset($configFile) || !file_exists($configFile)) {
@@ -34,24 +35,27 @@ class Config {
             $this->version = json_decode(file_get_contents(SITE_PATH . '/version.json'));
         }
 
-        switch ($this->currentStage()) {
-            case 'development':
-                $this->development();
-                break;
-            case 'test':
-                $this->test();
-                break;
-            case 'production':
-                $this->production();
-                break;
-            default:
-                $this->development();
-                break;
-        }
+        $stage = $this->currentStage();
+        $this->stage = $stage;
+        $this->setupEnvironment($this->config->environments->$stage);
     }
 
     public function addModuleDir(string $directory) {
         array_push($this->config->module_dirs, $directory);
+    }
+
+    public function getEnvironmentVariable(string $key) {
+        $stage = $this->stage;
+
+        if(isset($this->config->environments->$stage->keys->$key)) {
+            return $this->config->environments->$stage->keys->$key;
+        }
+
+        if(isset($this->config->keys->$key)) {
+            return $this->config->keys->$key;
+        }
+
+        return null;
     }
 
     /**
@@ -74,59 +78,19 @@ class Config {
     //
     // Private methods
     //
+    
+    private function setupEnvironment($environment) {
+        ini_set('display_errors', isset($environment->error_reporting) && $environment->error_reporting == true ? 1 : 0);
+        ini_set('error_reporting', isset($environment->error_reporting) && $environment->error_reporting == true ? E_ALL : E_NONE);
 
-    /**
-    * Configure properties for development environment.
-    * Errors and exceptions will be displayed.
-    */
-    private function development() {
-        ini_set('display_errors', '1');
-        ini_set('error_reporting', E_ALL);
-
-        $this->dbHost = $this->config->db->development->host;
+        $this->dbHost = $environment->db->host;
         if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
-            $this->dbUser = $this->config->db->development->adminUser;
+            $this->dbUser = $environment->db->adminUser;
         } else {
-            $this->dbUser = $this->config->db->development->user;
+            $this->dbUser = $environment->db->user;
         }
-        $this->dbPass = $this->config->db->development->pass;
-        $this->dbName = $this->config->db->development->name;
-    }
-
-    /**
-    * Configure properties for test environment.
-    * Errors and exceptions will be displayed.
-    */
-    private function test() {
-        ini_set('display_errors', '0');
-        ini_set('error_reporting', E_ALL);
-
-        $this->dbHost = $this->config->db->test->host;
-        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
-            $this->dbUser = $this->config->db->test->adminUser;
-        } else {
-            $this->dbUser = $this->config->db->test->user;
-        }
-        $this->dbPass = $this->config->db->test->pass;
-        $this->dbName = $this->config->db->test->name;
-    }
-
-    /**
-    * Configure properties for production environment.
-    * Errors and exceptions will not be displayed.
-    */
-    private function production() {
-        ini_set('display_errors', '0');
-        ini_set('error_reporting',  0);
-
-        $this->dbHost = $this->config->db->production->host;
-        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
-            $this->dbUser = $this->config->db->production->adminUser;
-        } else {
-            $this->dbUser = $this->config->db->production->user;
-        }
-        $this->dbPass = $this->config->db->production->pass;
-        $this->dbName = $this->config->db->production->name;
+        $this->dbPass = $environment->db->pass;
+        $this->dbName = $environment->db->name;
     }
 
     /**
@@ -136,12 +100,10 @@ class Config {
     * @return string environment name, or false if not found.
     */
     public function currentStage() {
-        if (in_array($_SERVER['HTTP_HOST'], $this->config->domains->production)) {
-            return 'production';
-        } elseif(in_array($_SERVER['HTTP_HOST'], $this->config->domains->development)) {
-            return 'development';
-        } elseif(in_array($_SERVER['HTTP_HOST'], $this->config->domains->test)) {
-            return 'test';
+        foreach(array_keys(get_object_vars($this->config->environments)) as $environment) {
+            if (in_array($_SERVER['HTTP_HOST'], $this->config->environments->$environment->domains)) {
+                return $environment;
+            }
         }
 
         return false;
