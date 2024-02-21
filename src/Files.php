@@ -21,7 +21,7 @@ class Files {
     * @return array Array of filenames
     */
     public static function getFilesInDirectory(string $directory, string $extension = ''): array {
-        $files = array();
+        $files = [];
 
         if (is_dir($directory) && $handle = opendir($directory)) {
             while (false !== ($file = readdir($handle))) {

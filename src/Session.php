@@ -19,7 +19,7 @@ class Session {
     * @param string $key
     * @param $value
     */
-    public static function setValueForKey(string $key, $value) {
+    public static function setValueForKey(string $key, $value): void {
         $_SESSION[$key] = $value;
     }
 
@@ -43,7 +43,7 @@ class Session {
     * @param string $key
     * @return Value for provided key, or null if not found.
     */
-    public static function valueForKey(string $key) {
+    public static function valueForKey(string $key): ?string {
         if (self::hasValueForKey($key)) {
             return $_SESSION[$key];
         }
@@ -56,14 +56,14 @@ class Session {
     *
     * @param string $key
     */
-    public static function removeValueForKey(string $key) {
+    public static function removeValueForKey(string $key): void {
         unset($_SESSION[$key]);
     }
 
     /**
     * Completely destroys the user session
     */
-    public static function destroySession() {
+    public static function destroySession(): void {
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_destroy();
         }

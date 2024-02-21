@@ -1,6 +1,7 @@
 <?php
-
 namespace Athos\Foundation;
+
+use JsonException;
 
 /**
 * Logger
@@ -19,14 +20,34 @@ class Logger {
     * @param int $statusCode HTTP status code
     * @param mixed $response Optional response payload
     */
-    public static function printOutput($statusCode, $response) {
+    public static function printOutput(int $statusCode, mixed $response = null): void {
         global $db;
 
         http_response_code($statusCode);
-        if(isset($response)) {
-          echo json_encode($response, isset($_GET['prettify']) && $_GET['prettify'] == 'true' ? JSON_NUMERIC_CHECK | JSON_PRETTY_PRINT : JSON_NUMERIC_CHECK);
+        
+        $options = JSON_NUMERIC_CHECK;
+        if (isset($_GET['prettify']) && $_GET['prettify'] === 'true') {
+            $options |= JSON_PRETTY_PRINT;
         }
-        $db->query("INSERT INTO exm_logs(status_code, method, ipaddress, path, headers, request, response) VALUES(?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response));
+        
+        if($response != null) {
+          try {
+              $responseJson = json_encode($response, $options | JSON_THROW_ON_ERROR);
+          } catch (JsonException $e) {
+              http_response_code(500);
+              echo json_encode(['error' => 'Failed to encode JSON'], JSON_THROW_ON_ERROR);
+              return;
+          }
+
+          echo $responseJson;
+        }
+
+        try {
+          $db->query("INSERT INTO exm_logs(status_code, method, ipaddress, path, headers, request, response) VALUES(?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response));
+        } catch (Exception $e) {
+          
+        }
       }
-}
+    }
+
 ?>

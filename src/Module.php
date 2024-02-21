@@ -41,7 +41,7 @@ class Module {
     * @param string $moduleName Name of the module
     * @param string $moduleAction Optional action to load within the module
     */
-    public function loadModule(string $moduleName, string $moduleAction = null) {
+    public function loadModule(string $moduleName, string $moduleAction = null): void {
         $this->moduleName = $moduleName;
         $this->moduleAction = $moduleAction;
 
@@ -109,7 +109,7 @@ class Module {
     * @param string $moduleAction Optional action to load within the module
     * @param bool $checkCredentials Allows for an override of credential checks
     */
-    private function loadController(string $moduleName, string $moduleAction = null, bool $checkCredentials = true) {
+    private function loadController(string $moduleName, string $moduleAction = null, bool $checkCredentials = true): void {
         if(class_exists(ucfirst(isset($moduleAction) ? $moduleAction : $moduleName) . 'Controller')) {
             $controller = ucfirst(isset($moduleAction) ? $moduleAction : $moduleName) . 'Controller';
             $controller = new $controller();
@@ -142,7 +142,7 @@ class Module {
     /**
     * Attempts to find the default controller and loads it if found.
     */
-    private function loadDefaultController() {
+    private function loadDefaultController(): void {
         if(file_exists(SITE_PATH . '/modules/DefaultController.php')) {
             require_once SITE_PATH.'/modules/DefaultController.php';
             $this->loadController('Default', null, false);

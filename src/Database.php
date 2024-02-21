@@ -80,7 +80,7 @@ class Database {
     * @return array all results
     */
     public function getRows(): array {
-        if (!$this->hasRows($this->result)) return array();
+        if (!$this->hasRows($this->result)) return [];
 
         return $this->result;
     }
@@ -132,7 +132,7 @@ class Database {
     /**
     * Closes the database connection.
     */
-    private function disconnect() {
+    private function disconnect(): void {
         $this->db->close();
     }
 }

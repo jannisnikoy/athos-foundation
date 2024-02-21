@@ -36,15 +36,21 @@ class Config {
         }
 
         $stage = $this->currentStage();
-        $this->stage = $stage;
-        $this->setupEnvironment($this->config->environments->$stage);
+
+        if(isset($stage)) {
+            $this->stage = $stage;
+            $this->setupEnvironment($this->config->environments->$stage);
+        } else {
+            echo '[ATHOS] Environment not found';
+            exit();
+        }
     }
 
-    public function addModuleDir(string $directory) {
+    public function addModuleDir(string $directory): void {
         array_push($this->config->module_dirs, $directory);
     }
 
-    public function getEnvironmentVariable(string $key) {
+    public function getEnvironmentVariable(string $key): ?string {
         $stage = $this->stage;
 
         if(isset($this->config->environments->$stage->keys->$key)) {
@@ -79,7 +85,7 @@ class Config {
     // Private methods
     //
     
-    private function setupEnvironment($environment) {
+    private function setupEnvironment($environment): void {
         ini_set('display_errors', isset($environment->error_reporting) && $environment->error_reporting == true ? 1 : 0);
         ini_set('error_reporting', isset($environment->error_reporting) && $environment->error_reporting == true ? E_ALL : E_ERROR | E_PARSE);
 
@@ -99,14 +105,14 @@ class Config {
     *
     * @return string environment name, or false if not found.
     */
-    public function currentStage() {
+    public function currentStage(): ?string {
         foreach(array_keys(get_object_vars($this->config->environments)) as $environment) {
             if (in_array($_SERVER['HTTP_HOST'], $this->config->environments->$environment->domains)) {
                 return $environment;
             }
         }
 
-        return false;
+        return null;
     }
 }
 ?>

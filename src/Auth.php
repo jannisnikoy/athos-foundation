@@ -72,7 +72,7 @@ class Auth {
     /**
     * Deactives a user session and destroys the session object.
     */
-    public function logout() {
+    public function logout(): void {
         $this->loggedIn = false;
 
         if (Session::valueForKey('ATHOS_SESSION_ID')) {
@@ -164,7 +164,7 @@ class Auth {
     * @see attemptSessionLogin()
     * @return bool true if a valid session is found.
     */
-    private function attemptCookieLogin() {
+    private function attemptCookieLogin(): bool {
         if (isset($_COOKIE['athos']) && is_string($_COOKIE['athos'])) {
             $s = json_decode($_COOKIE['athos'], true);
 
@@ -210,7 +210,7 @@ class Auth {
     * @return bool True if the session was validated
     */
     private function validateSession(string $sessionId): bool {
-        $this->db->query('SELECT * FROM exm_sessions WHERE id=? AND expires_at > NOW() AND is_active=true', ...array($sessionId));
+        $this->db->query('SELECT * FROM exm_sessions WHERE id=? AND expires_at > NOW() AND is_active=true', ...[$sessionId]);
 
         if ($this->db->hasRows()) {
             $this->db->query('UPDATE exm_sessions SET last_updated_at=NOW() WHERE id=?', $sessionId);
@@ -228,11 +228,11 @@ class Auth {
     *
     * @param string $sessionId User session ID
     */
-    private function storeSessionData(string $sessionId) {
+    private function storeSessionData(string $sessionId): void {
         Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
 
         if ($this->shouldUseCookies()) {
-            $s = json_encode(array('ATHOS_SESSION_ID' => $sessionId));
+            $s = json_encode(['ATHOS_SESSION_ID' => $sessionId]);
             setcookie('athos', $s, time()+$this->ttl);
         }
     }

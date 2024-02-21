@@ -57,6 +57,6 @@ class Controller {
     * @return array Array of accepted credentials
     */
     public function acceptedCredentials(): array {
-        return array('admin');
+        return ['admin'];
     }
 }
