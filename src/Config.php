@@ -81,7 +81,7 @@ class Config {
     
     private function setupEnvironment($environment) {
         ini_set('display_errors', isset($environment->error_reporting) && $environment->error_reporting == true ? 1 : 0);
-        ini_set('error_reporting', isset($environment->error_reporting) && $environment->error_reporting == true ? E_ALL : E_NONE);
+        ini_set('error_reporting', isset($environment->error_reporting) && $environment->error_reporting == true ? E_ALL : E_ERROR | E_PARSE);
 
         $this->dbHost = $environment->db->host;
         if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
