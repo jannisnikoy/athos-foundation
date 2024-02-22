@@ -91,11 +91,15 @@ class Config {
 
         $this->dbHost = $environment->db->host;
         if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
-            $this->dbUser = $environment->db->adminUser;
-        } else {
             $this->dbUser = $environment->db->user;
+        } else {
+            $this->dbUser = isset($environment->db->restUser) ? $environment->db->restUser : $this->dbUser = $environment->db->user;
         }
-        $this->dbPass = $environment->db->pass;
+        if(substr($_SERVER['REQUEST_URI'], 0, 5) != '/rest') {
+            $this->dbPass = $environment->db->pass;
+        } else {
+            $this->dbPass = isset($environment->db->restPass) ? $environment->db->restPass : $this->dbPass = $environment->db->pass;
+        }
         $this->dbName = $environment->db->name;
     }
 
