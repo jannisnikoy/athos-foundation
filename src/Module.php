@@ -48,7 +48,14 @@ class Module {
         $this->loadDefaultController();
 
         if ($this->moduleExists()) {
+            if(isset($_GET['rt']) && in_array($_GET['rt'], $this->config->get('disabled_modules') ?? []) && $moduleName != 'error') {
+                $module = new Module();
+                $module->loadModule('error');
+                return;
+            }
+            
             include $this->moduleFile;
+
             $this->loadController($moduleName, $moduleAction);
 
             if (isset($this->viewDir)) {
