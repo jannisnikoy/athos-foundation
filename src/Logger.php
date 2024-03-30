@@ -43,7 +43,7 @@ class Logger {
         }
 
         try {
-          $db->query("INSERT INTO exm_logs(status_code, method, ipaddress, path, headers, request, response) VALUES(?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response));
+          $db->query("INSERT INTO exm_logs(status_code, method, user_agent, ipaddress, path, headers, request, response) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response));
         } catch (Exception $e) {
           
         }
