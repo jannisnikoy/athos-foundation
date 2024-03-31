@@ -20,7 +20,7 @@ class Logger {
     * @param int $statusCode HTTP status code
     * @param mixed $response Optional response payload
     */
-    public static function printOutput(int $statusCode, mixed $response = null): void {
+    public static function printOutput(int $statusCode, mixed $response = null, float $executionStartTime = null): void {
         global $db;
 
         http_response_code($statusCode);
@@ -42,8 +42,14 @@ class Logger {
           echo $responseJson;
         }
 
+        $executionTime = null;
+
+        if(isset($executionStartTime)) {
+          $executionTime = microtime(true) - $executionStartTime;
+        }
+        
         try {
-          $db->query("INSERT INTO exm_logs(status_code, method, user_agent, ipaddress, path, headers, request, response) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response));
+          $db->query("INSERT INTO exm_logs(status_code, method, user_agent, ipaddress, path, headers, request, response, execution_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response), $executionTime);
         } catch (Exception $e) {
           
         }
