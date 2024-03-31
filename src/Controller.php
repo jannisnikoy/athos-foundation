@@ -18,6 +18,7 @@ class Controller {
     public $db;
     public $headers;
     public $smarty;
+    public $executionStartTime;
 
     public function __construct() {
         global $config, $auth, $db, $smarty;
@@ -27,6 +28,8 @@ class Controller {
         $this->db = $db;
         $this->smarty = $smarty;
         $this->headers = getallheaders();
+        $this->executionStartTime = microtime(true); 
+
 
         if (isset($_GET['action']) && method_exists($this, $_GET['action'].'Action')) {
             $action = strtolower($_GET['action']) . 'Action';
