@@ -42,6 +42,12 @@ class Logger {
           echo $responseJson;
         }
 
+        Logger::logOutput($statusCode, $response, $executionStartTime);
+      }
+
+      public static function logOutput(int $statusCode, mixed $response = null, float $executionStartTime = null): void {
+        global $db;
+
         $executionTime = null;
 
         if(isset($executionStartTime)) {
