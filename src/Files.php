@@ -37,5 +37,39 @@ class Files {
 
         return $files;
     }
+
+    public static function getFileFromBucket(?string $bucket, string $fileId, ?int $width, ?int $height): mixed {
+        global $db, $config;
+
+        if(isset($bucket)) {
+            $db->query("SELECT * FROM exm_storage_bucket WHERE id = ? AND bucket_id=?", $fileId, $bucket); 
+        } else {
+            $db->query("SELECT * FROM exm_storage_bucket WHERE id = ?", $fileId);
+        }
+
+        if($db->hasRows()) {
+            $row = $db->getRow();
+
+            $mime = explode('/', $row->mime_type);
+            $extension = $mime[1];
+            $extension = str_replace('jpeg', 'jpg', $extension);
+
+            $filePath = $config->get('storage_dir') . $row->id . '.' . $extension;
+
+            if(file_exists($filePath)) { 
+                header('Content-Type: ' . $row->mime_type);
+                if(Image::isImage($filePath) && (isset($width) || isset($height))) {
+                    Image::resizeImage($filePath, $width ?? null, $height ?? null);
+                } else {
+                    echo file_get_contents($filePath);
+                }
+                return $row;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
 }
 ?>
