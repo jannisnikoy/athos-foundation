@@ -122,6 +122,17 @@ class Auth {
         return 'Anonymous';
     }
 
+    public function getUser(): mixed {
+        if ($this->loggedIn) {
+            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
+
+            $this->db->query('SELECT id, username, email, role, timezone FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
+            return $this->db->getRow();
+        }
+
+        return null;
+    }
+    
     /**
     * Retrieves the current user credentials if a valid session is found.
     *
