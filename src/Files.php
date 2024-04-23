@@ -54,7 +54,7 @@ class Files {
             $extension = $mime[1];
             $extension = str_replace('jpeg', 'jpg', $extension);
 
-            $filePath = $config->get('storage_dir') . $row->id . '.' . $extension;
+            $filePath = $config->get('storage_dir') . '/' . $row->id . '.' . $extension;
 
             if(file_exists($filePath)) { 
                 header('Content-Type: ' . $row->mime_type);
