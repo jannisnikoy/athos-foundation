@@ -48,7 +48,7 @@ class Image {
             return false; 
         }
         
-        $newImg = imagecreatetruecolor($newWidth, $newHeight);
+        $newImg = imagecreatetruecolor(intval($newWidth), intval($newHeight));
         
         if ($type == IMAGETYPE_GIF || $type == IMAGETYPE_PNG) {
             imagecolortransparent(
@@ -60,7 +60,7 @@ class Image {
             imagesavealpha($newImg, true);
         }
         
-        imagecopyresampled($newImg, $srcImg, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+        imagecopyresampled($newImg, $srcImg, 0, 0, 0, 0, intval($newWidth), intval($newHeight), $width, $height);
         
         
         switch ($type) {
