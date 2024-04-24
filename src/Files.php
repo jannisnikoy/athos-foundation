@@ -56,6 +56,10 @@ class Files {
 
             $filePath = $config->get('storage_dir') . '/' . $row->id . '.' . $extension;
 
+            if(!file_exists($filePath)) {
+                $filePath = $config->get('tmp_storage_dir') . '/' . $row->id . '.' . $extension;
+            }
+            
             if(file_exists($filePath)) { 
                 header('Content-Type: ' . $row->mime_type);
                 if(Image::isImage($filePath) && (isset($width) || isset($height))) {
