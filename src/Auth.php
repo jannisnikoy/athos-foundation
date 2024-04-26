@@ -132,7 +132,7 @@ class Auth {
 
         return null;
     }
-    
+
     /**
     * Retrieves the current user credentials if a valid session is found.
     *
@@ -206,7 +206,11 @@ class Auth {
 
         $sessionId = md5($row->username . $row->password . time());
 
-        $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, to_timestamp(?))', $sessionId, $row->id, time()+$this->ttl);
+        if($this->config->get('db_provider') == 'pgsql') { 
+            $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, to_timestamp(?))', $sessionId, $row->id, time()+$this->ttl);
+        } else {
+            $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, FROM_UNIXTIME(?))', $sessionId, $row->id, time()+$this->ttl);
+        }
         $this->storeSessionData($sessionId);
 
         $this->loggedIn = true;

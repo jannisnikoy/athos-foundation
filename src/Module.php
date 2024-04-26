@@ -150,6 +150,14 @@ class Module {
     * Attempts to find the default controller and loads it if found.
     */
     private function loadDefaultController(): void {
+        foreach ($this->config->get('module_dirs') as $directory) {
+
+            if(file_exists($directory . '/AthosController.php')) {
+                require_once $directory . '/AthosController.php';
+                $this->loadController('Athos', null, false);
+            }
+        }
+
         if(file_exists(SITE_PATH . '/modules/DefaultController.php')) {
             require_once SITE_PATH.'/modules/DefaultController.php';
             $this->loadController('Default', null, false);
