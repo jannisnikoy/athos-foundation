@@ -61,7 +61,7 @@ class Database {
 
         $this->statement->execute();
 
-        if (stripos($sql, 'SELECT') === 0) {
+        if (strtoupper(substr(ltrim($sql), 0, 6)) === "SELECT") {
             $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
             return $this->result;
         } else {
