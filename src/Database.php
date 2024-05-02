@@ -60,9 +60,13 @@ class Database {
         }
 
         $this->statement->execute();
-        $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
 
-        return $this->result;
+        if (stripos($sql, 'SELECT') === 0) {
+            $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
+            return $this->result;
+        } else {
+            return [$this->statement->rowCount()];
+        }
     }
 
     /**
