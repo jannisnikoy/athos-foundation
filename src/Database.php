@@ -61,11 +61,13 @@ class Database {
 
         $this->statement->execute();
 
-        if (strtoupper(substr(ltrim($sql), 0, 6)) === "SELECT") {
+        $substr = strtoupper(substr(ltrim($sql), 0, 6));
+
+        if ($substr == "INSERT" || $substr == "UPDATE" || $substr == "DELETE") {
+            return [$this->statement->rowCount()];
+        }else {
             $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
             return $this->result;
-        } else {
-            return [$this->statement->rowCount()];
         }
     }
 
