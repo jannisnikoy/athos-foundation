@@ -30,14 +30,18 @@ class Controller {
         $this->headers = getallheaders();
         $this->executionStartTime = microtime(true); 
 
-
-        if (isset($_GET['action']) && method_exists($this, $_GET['action'].'Action')) {
-            $action = strtolower($_GET['action']) . 'Action';
-            $this->$action();
-        } else {
-            if (method_exists($this, 'defaultAction')) {
-                $this->defaultAction();
+        try {
+            if (isset($_GET['action']) && method_exists($this, $_GET['action'].'Action')) {
+                $action = strtolower($_GET['action']) . 'Action';
+                $this->$action();
+            } else {
+                if (method_exists($this, 'defaultAction')) {
+                    $this->defaultAction();
+                }
             }
+        } catch (AthosException $e) {
+            $this->smarty->assign('error', $e->getMessage());
+            $this->smarty->assign('errorBlocksUI', $e->shouldBlockUI());
         }
     }
 
