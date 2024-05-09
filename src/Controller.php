@@ -39,7 +39,7 @@ class Controller {
                     $this->defaultAction();
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->smarty->assign('error', $e->getMessage());
             $this->smarty->assign('fatalError', $e->getCode() == 500);
         }
