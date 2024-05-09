@@ -39,9 +39,9 @@ class Controller {
                     $this->defaultAction();
                 }
             }
-        } catch (AthosException $e) {
+        } catch (\Exception $e) {
             $this->smarty->assign('error', $e->getMessage());
-            $this->smarty->assign('errorBlocksUI', $e->shouldBlockUI());
+            $this->smarty->assign('fatalError', $e->getCode() == 500);
         }
     }
 
