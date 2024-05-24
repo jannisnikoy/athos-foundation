@@ -64,6 +64,20 @@ class Config {
         return null;
     }
 
+    public function getPushNotificationSetting(string $key): ?string {
+        $stage = $this->stage;
+
+        if(isset($this->config->environments->$stage->push_notifications->$key)) {
+            return $this->config->environments->$stage->push_notifications->$key;
+        }
+
+        if(isset($this->config->push_notifications->$key)) {
+            return $this->config->push_notifications->$key;
+        }
+
+        return null;
+    }
+
     /**
     * Retrieves configuration properties.
     *
