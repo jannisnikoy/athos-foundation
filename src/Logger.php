@@ -46,7 +46,7 @@ class Logger {
       }
 
       public static function logOutput(int $statusCode, mixed $response = null, float $executionStartTime = null): void {
-        global $db;
+        global $db, $config;
 
         $executionTime = null;
 
@@ -54,10 +54,12 @@ class Logger {
           $executionTime = microtime(true) - $executionStartTime;
         }
         
-        try {
-          $db->query("INSERT INTO exm_logs(status_code, method, user_agent, ipaddress, path, headers, request, response, execution_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response), $executionTime);
-        } catch (Exception $e) {
-          
+        if (isset($_SERVER['HTTP_USER_AGENT']) && strpos($_SERVER['HTTP_USER_AGENT'], 'curl/') === false && $config->getEnvironmentVariable('log_curl_requests') != true) {
+          try {
+            $db->query("INSERT INTO exm_logs(status_code, method, user_agent, ipaddress, path, headers, request, response, execution_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response), $executionTime);
+          } catch (Exception $e) {
+            
+          }
         }
       }
     }
