@@ -81,13 +81,20 @@ class Module {
     */
     private function moduleExists(): bool {
         foreach ($this->config->get('module_dirs') as $directory) {
-            if (file_exists($directory . strtolower($this->moduleName) . '/views/' . strtolower($this->moduleName) . '.html')) {
-                $this->viewDir = $directory . strtolower($this->moduleName) . '/views/';
-            }
-
             $moduleControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst(isset($this->moduleAction) ? $this->moduleAction : $this->moduleName) . 'Controller.php';
             $standaloneControllerFile = $directory . ucfirst($this->moduleName) . 'Controller.php';
             $mainControllerFile = $directory . strtolower($this->moduleName) . '/controllers/' . ucfirst($this->moduleName) . 'Controller.php';
+            $dataControllerFile = $directory . strtolower($this->moduleName) . '/data/' . ucfirst(isset($this->moduleAction) ? $this->moduleAction : $this->moduleName) . 'Controller.php';
+
+            if(file_exists($dataControllerFile)) {
+                $this->moduleDir = $directory;
+                $this->moduleFile = $dataControllerFile;
+                return true;
+            }
+
+            if (file_exists($directory . strtolower($this->moduleName) . '/views/' . strtolower($this->moduleName) . '.html')) {
+                $this->viewDir = $directory . strtolower($this->moduleName) . '/views/';
+            }
 
             if (file_exists($moduleControllerFile)) {
                 $this->moduleDir = $directory .  strtolower($this->moduleName) . '/controllers/';
