@@ -64,6 +64,22 @@ class Config {
         return null;
     }
 
+    public function getFeatureFlags(): array {
+        $stage = $this->stage;
+
+        $feature_flags = [];
+
+        if (isset($this->config->environments->$stage->feature_flags)) {
+            $feature_flags = array_merge($this->config->environments->$stage->feature_flags, $feature_flags);
+        }
+        
+        if (isset($this->config->feature_flags)) {
+            $feature_flags = array_merge($this->config->feature_flags, $feature_flags);
+        }
+
+        return array_unique($feature_flags);
+    }
+
     public function getPushNotificationSetting(string $key): ?string {
         $stage = $this->stage;
 
