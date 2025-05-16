@@ -40,8 +40,7 @@ class Controller {
                 }
             }
         } catch (\Throwable $e) {
-            $this->smarty->assign('error', $e->getMessage());
-            $this->smarty->assign('fatalError', $e->getCode() == 500);
+            $this->config->get('error_reporting') ? $this->smarty->assign('error', $e->getMessage()) : $this->smarty->assign('error', 'An error occurred while processing your request. Please try again later.');
         }
     }
 

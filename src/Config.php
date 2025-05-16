@@ -108,6 +108,12 @@ class Config {
             return $this->$key;
         }
 
+        $stage = $this->stage;
+
+        if(isset($this->config->environments->$stage->$key)) {
+            return $this->config->environments->$stage->$key;
+        }
+
         return null;
     }
 

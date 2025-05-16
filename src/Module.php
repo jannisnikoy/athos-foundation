@@ -141,8 +141,14 @@ class Module {
             $acceptedCredentials = $controller->acceptedCredentials();
 
             if ($requiresCredentials && $moduleName != 'login' && !$this->auth->loggedIn()) {
-               header('Location: ' . $this->config->get('site_root') . '/login');
-               return;
+                $returnUri = '';
+
+                if($_SERVER['REQUEST_URI'] != '/') {
+                    $returnUri = '?returnUri=' . str_replace($this->config->get('site_root') . '/', '/', $_SERVER['REQUEST_URI']);
+                }
+
+                header('Location: ' . $this->config->get('site_root') . '/login' . $returnUri);            
+                return;
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {
