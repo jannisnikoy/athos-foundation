@@ -126,7 +126,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT id, username, email, role, timezone FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT * FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
             return $this->db->getRow();
         }
 
@@ -195,7 +195,11 @@ class Auth {
     * @param string $password
     */
     private function attemptLogin(string $username, string $password): bool {
-        $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+        if($this->config->getEnvironmentVariable('use_email_login')) {
+            $this->db->query('SELECT * FROM exm_users WHERE email=? AND password=?', $username, hash('sha256', $password));
+        } else {
+            $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+        }
 
         if (!$this->db->hasRows()) {
             $this->loggedIn = false;
