@@ -26,12 +26,16 @@ class Module {
     private $viewDir;
     private $viewFile;
 
+    private $smarty;
+
     public function __construct() {
         global $config;
         global $auth;
+        global $smarty;
 
         $this->config = $config;
         $this->auth = $auth;
+        $this->smarty = $smarty;
     }
 
     /**
@@ -132,6 +136,7 @@ class Module {
             $controller = new $controller();
         } else {
             $module = new Module();
+
             $module->loadModule('error');
             exit();
         }
@@ -143,19 +148,33 @@ class Module {
             if ($requiresCredentials && $moduleName != 'login' && !$this->auth->loggedIn()) {
                 $returnUri = '';
 
-                if($_SERVER['REQUEST_URI'] != '/') {
+                if($_SERVER['REQUEST_URI'] != '/' && $_SERVER['REQUEST_URI'] != $this->config->get('site_root') . '/' && $_SERVER['REQUEST_URI'] != $this->config->get('site_root')) {
                     $returnUri = '?returnUri=' . str_replace($this->config->get('site_root') . '/', '/', $_SERVER['REQUEST_URI']);
                 }
 
-                header('Location: ' . $this->config->get('site_root') . '/login' . $returnUri);            
-                return;
+               header('Location: ' . $this->config->get('site_root') . '/login' . $returnUri);
+               return;
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {
                 $module = new Module();
-                $module->loadModule('unauthorized');
+                $module->loadModule('error');
                 exit();
             }
+        }
+
+        try {
+            if (isset($_GET['action']) && method_exists($controller, $_GET['action'].'Action')) {
+                $action = strtolower($_GET['action']) . 'Action';
+                $controller->$action();
+            } else {
+                if (method_exists($controller, 'defaultAction')) {
+                    $controller->defaultAction();
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->smarty->assign('error', $e->getMessage());
+            $this->smarty->assign('fatalError', $e->getCode() == 500);
         }
     }
 
