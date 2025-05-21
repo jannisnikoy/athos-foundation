@@ -29,19 +29,6 @@ class Controller {
         $this->smarty = $smarty;
         $this->headers = getallheaders();
         $this->executionStartTime = microtime(true); 
-
-        try {
-            if (isset($_GET['action']) && method_exists($this, $_GET['action'].'Action')) {
-                $action = strtolower($_GET['action']) . 'Action';
-                $this->$action();
-            } else {
-                if (method_exists($this, 'defaultAction')) {
-                    $this->defaultAction();
-                }
-            }
-        } catch (\Throwable $e) {
-            $this->config->get('error_reporting') ? $this->smarty->assign('error', $e->getMessage()) : $this->smarty->assign('error', 'An error occurred while processing your request. Please try again later.');
-        }
     }
 
     /**
