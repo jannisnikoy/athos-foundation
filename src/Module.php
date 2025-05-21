@@ -60,11 +60,11 @@ class Module {
             
             include $this->moduleFile;
 
-            $this->loadController($moduleName, $moduleAction);
+            $this->loadController($this->moduleName, $this->moduleAction);
 
             if (isset($this->viewDir)) {
                 $template = new Template();
-                $template->loadTemplate($this->viewDir, $moduleName, $moduleAction);
+                $template->loadTemplate($this->viewDir, $this->moduleName, $this->moduleAction);
             }
         } else {
             $module = new Module();
@@ -93,6 +93,7 @@ class Module {
             if(file_exists($dataControllerFile)) {
                 $this->moduleDir = $directory;
                 $this->moduleFile = $dataControllerFile;
+                
                 return true;
             }
 
