@@ -115,7 +115,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT username FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT username FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
             return ucfirst($this->db->getRow()->username);
         }
 
@@ -126,7 +126,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT * FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT * FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
             return $this->db->getRow();
         }
 
@@ -144,7 +144,7 @@ class Auth {
         if ($this->loggedIn) {
             $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
 
-            $this->db->query('SELECT role FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?)', $sessionId);
+            $this->db->query('SELECT role FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
             return $this->db->getRow()->role;
         }
 
@@ -196,9 +196,9 @@ class Auth {
     */
     private function attemptLogin(string $username, string $password): bool {
         if($this->config->getEnvironmentVariable('use_email_login')) {
-            $this->db->query('SELECT * FROM exm_users WHERE email=? AND password=?', $username, hash('sha256', $password));
+            $this->db->query('SELECT * FROM exm_users WHERE email=? AND password=? AND is_active=true', $username, hash('sha256', $password));
         } else {
-            $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+            $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=? AND is_active=true', $username, hash('sha256', $password));
         }
 
         if (!$this->db->hasRows()) {

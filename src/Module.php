@@ -164,18 +164,13 @@ class Module {
             }
         }
 
-        try {
-            if (isset($_GET['action']) && method_exists($controller, $_GET['action'].'Action')) {
-                $action = strtolower($_GET['action']) . 'Action';
-                $controller->$action();
-            } else {
-                if (method_exists($controller, 'defaultAction')) {
-                    $controller->defaultAction();
-                }
+        if (isset($_GET['action']) && method_exists($controller, $_GET['action'].'Action')) {
+            $action = strtolower($_GET['action']) . 'Action';
+            $controller->$action();
+        } else {
+            if (method_exists($controller, 'defaultAction')) {
+                $controller->defaultAction();
             }
-        } catch (\Throwable $e) {
-            $this->smarty->assign('error', $e->getMessage());
-            $this->smarty->assign('fatalError', $e->getCode() == 500);
         }
     }
 
