@@ -50,20 +50,6 @@ class Config {
         array_push($this->config->module_dirs, $directory);
     }
 
-    public function getEnvironmentVariable(string $key): ?string {
-        $stage = $this->stage;
-
-        if(isset($this->config->environments->$stage->keys->$key)) {
-            return $this->config->environments->$stage->keys->$key;
-        }
-
-        if(isset($this->config->keys->$key)) {
-            return $this->config->keys->$key;
-        }
-
-        return null;
-    }
-
     public function getFeatureFlags(): array {
         $stage = $this->stage;
 
@@ -98,8 +84,10 @@ class Config {
     * Retrieves configuration properties.
     *
     * @return string Property value
+    * @param string $key Property key
+    * @param mixed $defaultValue Default value if property is not found
     */
-    public function get(string $key) {
+    public function get(string $key, $defaultValue = null) {
         if(isset($this->config->$key)) {
             return $this->config->$key;
         }
@@ -114,7 +102,21 @@ class Config {
             return $this->config->environments->$stage->$key;
         }
 
-        return null;
+        return $defaultValue;
+    }
+
+    public function getEnvironmentVariable(string $key, $defaultValue = null) {
+        $stage = $this->stage;
+
+        if(isset($this->config->environments->$stage->keys->$key)) {
+            return $this->config->environments->$stage->keys->$key;
+        }
+
+        if(isset($this->config->keys->$key)) {
+            return $this->config->keys->$key;
+        }
+
+        return $defaultValue;
     }
 
     //

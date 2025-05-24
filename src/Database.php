@@ -24,6 +24,7 @@ class Database {
     private $statement;
     private $provider;
     private $isConnected = false;
+    private $tablePrefix;
 
     /**
     * Initializes Database with the provided credentials.
@@ -38,6 +39,7 @@ class Database {
         $this->pass = $config->get('dbPass');
         $this->name = $config->get('dbName');
         $this->provider = $config->get('db_provider');
+        $this->tablePrefix = $config->get('dbTablePrefix', 'exm_');
     }
 
     /**
@@ -51,6 +53,8 @@ class Database {
     */
     public function query(string $sql): array {
         if (!$this->isConnected) $this->connect();
+
+        $sql = str_replace('{prefix}', $this->tablePrefix, $sql);
 
         $this->statement = $this->db->prepare($sql);
         $params = func_get_args();
