@@ -158,8 +158,7 @@ class Module {
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {
-                $module = new Module();
-                $module->loadModule('error');
+                throw new \Exception('UNAUTH');
                 exit();
             }
         }
