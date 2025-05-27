@@ -54,10 +54,10 @@ class Files {
             $extension = $mime[1];
             $extension = str_replace('jpeg', 'jpg', $extension);
 
-            $filePath = $config->get('storage_dir') . '/' . $row->id . '.' . $extension;
+            $filePath = ($config->get('storage_dir') ?? $config->get('storage')->location) . '/' . $row->id . '.' . $extension;
 
             if(!file_exists($filePath)) {
-                $filePath = $config->get('tmp_storage_dir') . '/' . $row->id . '.' . $extension;
+                $filePath = ($config->get('tmp_storage_dir') ?? $config->get('storage')->temp_location) . '/' . $row->id . '.' . $extension;
             }
             
             if(file_exists($filePath)) { 
