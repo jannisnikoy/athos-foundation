@@ -1,6 +1,8 @@
 <?php
 
 namespace Athos\Foundation;
+use \Firebase\JWT\JWT;
+use \Jchook\Uuid;
 
 /**
 * Authentication
@@ -16,26 +18,14 @@ class Auth {
     private $config;
     private $db;
     private $loggedIn;
-    private $ttl;
 
     function __construct() {
         global $config, $db;
 
         $this->config = $config;
         $this->db = $db;
-        $this->ttl = 86400;
 
-        if ($this->config->get('session_ttl') != null && is_int($this->config->get('session_ttl'))) {
-            $this->ttl = $this->config->get('session_ttl');
-        }
-
-        if ($this->attemptSessionLogin()) {
-            return;
-        }
-
-        if ($this->shouldUseCookies()) {
-            $this->attemptCookieLogin();
-        }
+        $this->attemptCookieLogin();
     }
 
 
@@ -47,13 +37,13 @@ class Auth {
     * @return bool true if registration was succesful
     */
     public function register(string $username, string $password): bool {
-        $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=?', $username, hash('sha256', $password));
+        $this->db->query('SELECT * FROM {prefix}users WHERE username=? OR email=?', $username, $username);
 
         if ($this->db->hasRows()) {
             return false;
         }
 
-        $this->db->query('INSERT INTO exm_users(username, password) VALUES(?, ?)', $username, hash('sha256', $password));
+        $this->db->query('INSERT INTO {prefix}users (username, password) VALUES(?, ?)', $username, password_hash($password, PASSWORD_ARGON2ID));
 
         return $this->attemptLogin($username, $password);
     }
@@ -75,12 +65,36 @@ class Auth {
     public function logout(): void {
         $this->loggedIn = false;
 
-        if (Session::valueForKey('ATHOS_SESSION_ID')) {
-            $this->db->query('UPDATE exm_sessions SET is_active=false WHERE id=?', Session::valueForKey('ATHOS_SESSION_ID'));
-        }
+        $host = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
+        $host = str_replace('http://', '', $host);
+        $host = str_replace('https://', '', $host);
+        $host = explode(':', $host)[0];
+        
+        setcookie(
+            'athos',
+            '',
+            [
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'path'     => '/',
+                'domain'   => $host,
+                'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'httponly' => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'samesite' => $this->config->getEnvironmentVariable('jwt_require_secure', true) == true ? 'Strict' : 'None',
+            ]
+        );
 
-        Session::destroySession();
-        setcookie('athos', '.', time() - $this->ttl, '/', 'localhost');
+        setcookie(
+            'athos-refresh',
+            '',
+            [
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'path'     => '/',
+                'domain'   => $host,
+                'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'httponly' => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'samesite' => $this->config->getEnvironmentVariable('jwt_require_secure', true) == true ? 'Strict' : 'None',
+            ]
+        );
     }
 
     /**
@@ -93,15 +107,8 @@ class Auth {
             return true;
         }
 
-        if ($this->attemptSessionLogin()) {
-            return true;
-        }
-
-        if ($this->shouldUseCookies()) {
-            return $this->attemptCookieLogin();
-        }
-
-        return false;
+        $this->loggedIn = $this->attemptCookieLogin();
+        return $this->loggedIn;
     }
 
     /**
@@ -113,9 +120,9 @@ class Auth {
     */
     public function getUsername(): string {
         if ($this->loggedIn) {
-            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
+            $user = $this->checkToken();
 
-            $this->db->query('SELECT username FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
+            $this->db->query('SELECT username FROM {prefix}users WHERE id=? AND is_active=true', $user->userId);
             return ucfirst($this->db->getRow()->username);
         }
 
@@ -124,9 +131,9 @@ class Auth {
 
     public function getUser(): mixed {
         if ($this->loggedIn) {
-            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
+            $user = $this->checkToken();
 
-            $this->db->query('SELECT * FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
+            $this->db->query('SELECT * FROM {prefix}users WHERE id=? AND is_active=true', $user->userId);
             return $this->db->getRow();
         }
 
@@ -142,32 +149,70 @@ class Auth {
     */
     public function getUserCredentials(): string {
         if ($this->loggedIn) {
-            $sessionId = Session::valueForKey('ATHOS_SESSION_ID');
-
-            $this->db->query('SELECT role FROM exm_users WHERE id=(SELECT user_id FROM exm_sessions WHERE id=?) AND is_active=true', $sessionId);
+            $user = $this->checkToken();
+            
+            $this->db->query('SELECT role FROM {prefix}users WHERE id=? AND is_active=true', $user->userId);
             return $this->db->getRow()->role;
         }
 
         return 'none';
     }
 
+
+    /**
+     * Generates a JWT token for a user
+     *
+     * @param string $userId The user ID
+     * @return string The JWT token
+     */
+    public function getJwtToken(string $userId, string $aud = 'dashboard'): string {
+        $arClaim['iss'] = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
+        $arClaim['iat'] = time();
+        $arClaim['exp'] = time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600);
+        $arClaim['sid'] = Uuid::v4();
+        $arClaim['sub'] = $userId;
+        $arClaim['aud'] = $aud;
+
+        $key = file_get_contents($this->config->getEnvironmentVariable('jwt_private_key'));
+
+        return JWT::encode($arClaim, $key, 'RS256');
+      }
+
+    /**
+     * Checks if the token is valid
+     *
+     * @return object|null The decoded token or null if the token is invalid
+    */
+    public function checkToken() {
+        if(isset($_COOKIE['athos'])) {
+            $aud = 'dashboard';
+            $jwtToken = $_COOKIE['athos'];
+        } else {
+            $headers = array_change_key_case(getallheaders());
+
+            if(preg_match('/Bearer\s(\S+)/', $headers['authorization'], $matches)) {
+                $jwtToken = $matches[1];
+                $aud = 'api';
+            }
+        }
+
+        if(!isset($jwtToken)) {
+            return null;
+        }
+
+        $decoded = JWT::decode($jwtToken, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
+
+        if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && $decoded->exp > time()) {
+            $decoded->userId = $decoded->sub;
+            return $decoded;
+        }
+
+        return null;
+    }
+
     //
     // Private methods
     //
-
-    /**
-    * Attempts to validate a user session if a session ID is found.
-    *
-    * @see attemptCookieLogin()
-    * @return bool true if a valid session is found.
-    */
-    private function attemptSessionLogin(): bool {
-        if (Session::hasValueForKey('ATHOS_SESSION_ID')) {
-            return $this->validateSession(Session::valueForKey('ATHOS_SESSION_ID'));
-        }
-
-        return false;
-    }
 
     /**
     * Attempts to validate a user session by cookie
@@ -176,12 +221,8 @@ class Auth {
     * @return bool true if a valid session is found.
     */
     private function attemptCookieLogin(): bool {
-        if (isset($_COOKIE['athos']) && is_string($_COOKIE['athos'])) {
-            $s = json_decode($_COOKIE['athos'], true);
-
-            if (isset($s['ATHOS_SESSION_ID'])) {
-                return $this->validateSession($s['ATHOS_SESSION_ID']);
-            }
+        if (isset($_COOKIE['athos'])) {
+            return null !== $this->checkToken();
         }
 
         return false;
@@ -195,10 +236,12 @@ class Auth {
     * @param string $password
     */
     private function attemptLogin(string $username, string $password): bool {
+        $encryptedPassword = password_hash($password, PASSWORD_ARGON2ID);
+
         if($this->config->getEnvironmentVariable('use_email_login')) {
-            $this->db->query('SELECT * FROM exm_users WHERE email=? AND password=? AND is_active=true', $username, hash('sha256', $password));
+            $this->db->query('SELECT id, email, password FROM {prefix}users WHERE email=? AND is_active=true', $username);
         } else {
-            $this->db->query('SELECT * FROM exm_users WHERE username=? AND password=? AND is_active=true', $username, hash('sha256', $password));
+            $this->db->query('SELECT id, email, password FROM {prefix}users WHERE username=? AND is_active=true', $username);
         }
 
         if (!$this->db->hasRows()) {
@@ -208,14 +251,22 @@ class Auth {
 
         $row = $this->db->getRow();
 
-        $sessionId = md5($row->username . $row->password . time());
+        if (!password_verify($password, $row->password)) {
+            $this->loggedIn = false;
+            return false;
+        }
+
+        $token = $this->getJwtToken($row->id);
+        $this->storeSessionData($token);
+
+        $decodedToken = JWT::decode($token, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
+        $refreshToken = $_COOKIE['athos-refresh'];
 
         if($this->config->get('db_provider') == 'pgsql') { 
-            $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, to_timestamp(?))', $sessionId, $row->id, time()+$this->ttl);
+            $this->db->query('INSERT INTO {prefix}sessions(id, user_id, aud, refresh_token, expires_at, user_agent, ip_address) VALUES(?, ?, ?, ?, to_timestamp(?), ?, ?)', $decodedToken->sid, $row->id, $decodedToken->aud, $refreshToken, $decodedToken->exp,  $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR']);
         } else {
-            $this->db->query('INSERT INTO exm_sessions(id, user_id, expires_at) VALUES(?, ?, FROM_UNIXTIME(?))', $sessionId, $row->id, time()+$this->ttl);
+            $this->db->query('INSERT INTO {prefix}sessions(id, user_id, aud, refresh_token, expires_at, user_agent, ip_address) VALUES(?, ?, ?, ?, FROM_UNIXTIME(?), ?, ?)', $decodedToken->sid, $row->id, $decodedToken->aud, $refreshToken, $decodedToken->exp,  $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR']);
         }
-        $this->storeSessionData($sessionId);
 
         $this->loggedIn = true;
 
@@ -223,53 +274,41 @@ class Auth {
     }
 
     /**
-    * Verifies the existence of the requested session.
-    *
-    * @param string $sessionId User session ID
-    * @return bool True if the session was validated
-    */
-    private function validateSession(string $sessionId): bool {
-        $this->db->query('SELECT * FROM exm_sessions WHERE id=? AND expires_at > NOW() AND is_active=true', ...[$sessionId]);
-
-        if ($this->db->hasRows()) {
-            $this->db->query('UPDATE exm_sessions SET last_updated_at=NOW() WHERE id=?', $sessionId);
-            Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
-            $this->loggedIn = true;
-        } else {
-            $this->logout();
-        }
-
-        return $this->loggedIn;
-    }
-
-    /**
     * Stores the sessionID in a PHP session and cookie.
     *
     * @param string $sessionId User session ID
     */
-    private function storeSessionData(string $sessionId): void {
-        Session::setValueForKey('ATHOS_SESSION_ID', $sessionId);
+    private function storeSessionData(string $jwt): void {
+        $host = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
+        $host = str_replace('http://', '', $host);
+        $host = str_replace('https://', '', $host);
+        $host = explode(':', $host)[0];
+        
+        setcookie(
+            'athos',
+            $jwt,
+            [
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'path'     => '/',
+                'domain'   => $host,
+                'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'httponly' => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'samesite' => $this->config->getEnvironmentVariable('jwt_require_secure', true) == true ? 'Strict' : 'None',
+            ]
+        );
 
-        if ($this->shouldUseCookies()) {
-            $s = json_encode(['ATHOS_SESSION_ID' => $sessionId]);
-            setcookie('athos', $s, time()+$this->ttl);
-        }
-    }
-
-    /**
-    * Determines if cookies should be used.
-    * Can be set using $config['use_cookies'].
-    *
-    * Default: true
-    *
-    * @return bool true if cookies should be used.
-    */
-    private function shouldUseCookies(): bool {
-        if ($this->config->get('use_cookies') != null) {
-            return $this->config->get('use_cookies');
-        }
-
-        return true;
+        setcookie(
+            'athos-refresh',
+            bin2hex(random_bytes(64)),
+            [
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'path'     => '/',
+                'domain'   => $host,
+                'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'httponly' => $this->config->getEnvironmentVariable('jwt_require_secure', true),
+                'samesite' => $this->config->getEnvironmentVariable('jwt_require_secure', true) == true ? 'Strict' : 'None',
+            ]
+        );
     }
 }
 ?>

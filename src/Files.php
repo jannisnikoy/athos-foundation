@@ -42,9 +42,9 @@ class Files {
         global $db, $config;
 
         if(isset($bucket)) {
-            $db->query("SELECT * FROM exm_storage_bucket WHERE id = ? AND bucket_id=?", $fileId, $bucket); 
+            $db->query("SELECT * FROM {prefix}storage_bucket WHERE id = ? AND bucket_id=?", $fileId, $bucket); 
         } else {
-            $db->query("SELECT * FROM exm_storage_bucket WHERE id = ?", $fileId);
+            $db->query("SELECT * FROM {prefix}storage_bucket WHERE id = ?", $fileId);
         }
 
         if($db->hasRows()) {
