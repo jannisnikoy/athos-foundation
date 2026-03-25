@@ -56,7 +56,16 @@ class Logger {
         
         if ((isset($_SERVER['HTTP_USER_AGENT']) && strpos($_SERVER['HTTP_USER_AGENT'], 'curl/') === false) || $config->getEnvironmentVariable('log_curl_requests') == true) {
           try {
-            $db->query("INSERT INTO {prefix}logs(status_code, method, user_agent, ipaddress, path, headers, request, response, execution_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), file_get_contents('php://input'), json_encode($response), $executionTime);
+            $request = file_get_contents('php://input');
+            $blockedStrings = array('password', 'secret');
+            foreach ($array as $request) {
+              if (stripos($variable, $blockedString) !== false) {
+                  $request = '[CENSORED]';
+                  break;
+              }
+            }
+
+            $db->query("INSERT INTO {prefix}logs(status_code, method, user_agent, ipaddress, path, headers, request, response, execution_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)", $statusCode, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR'], $_SERVER['REQUEST_URI'], json_encode(getallheaders()), $request, json_encode($response), $executionTime);
           } catch (Exception $e) {
             
           }
