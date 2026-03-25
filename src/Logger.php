@@ -58,8 +58,9 @@ class Logger {
           try {
             $request = file_get_contents('php://input');
             $blockedStrings = array('password', 'secret');
-            foreach ($array as $request) {
-              if (stripos($variable, $blockedString) !== false) {
+            
+            foreach ($blockedStrings as $blockedString) {
+              if (stripos($request, $blockedString) !== false) {
                   $request = '[CENSORED]';
                   break;
               }
