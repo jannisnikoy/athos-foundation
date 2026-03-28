@@ -133,7 +133,7 @@ class Auth {
         if ($this->loggedIn) {
             $user = $this->checkToken();
 
-            $this->db->query('SELECT * FROM {prefix}users WHERE id=? AND is_active=true', $user->userId);
+            $this->db->query('SELECT * FROM {prefix}users WHERE id=? AND is_active=true AND role=?', $user->userId, $user->role);
             return $this->db->getRow();
         }
 
@@ -151,8 +151,7 @@ class Auth {
         if ($this->loggedIn) {
             $user = $this->checkToken();
             
-            $this->db->query('SELECT role FROM {prefix}users WHERE id=? AND is_active=true', $user->userId);
-            return $this->db->getRow()->role;
+            return $user->role;
         }
 
         return 'none';
@@ -165,13 +164,14 @@ class Auth {
      * @param string $userId The user ID
      * @return string The JWT token
      */
-    public function getJwtToken(string $userId, string $aud = 'dashboard'): string {
+    public function getJwtToken(string $userId, string $role = 'client', string $aud = 'dashboard'): string {
         $arClaim['iss'] = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
         $arClaim['iat'] = time();
         $arClaim['exp'] = time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600);
         $arClaim['sid'] = Uuid::v4();
         $arClaim['sub'] = $userId;
         $arClaim['aud'] = $aud;
+        $arClaim['role'] = $role;
 
         $key = file_get_contents($this->config->getEnvironmentVariable('jwt_private_key'));
 
@@ -243,9 +243,9 @@ class Auth {
         $encryptedPassword = password_hash($password, PASSWORD_ARGON2ID);
 
         if($this->config->getEnvironmentVariable('use_email_login')) {
-            $this->db->query('SELECT id, email, password FROM {prefix}users WHERE email=? AND is_active=true', $username);
+            $this->db->query('SELECT id, email, password, role FROM {prefix}users WHERE email=? AND is_active=true', $username);
         } else {
-            $this->db->query('SELECT id, email, password FROM {prefix}users WHERE username=? AND is_active=true', $username);
+            $this->db->query('SELECT id, email, password, role FROM {prefix}users WHERE username=? AND is_active=true', $username);
         }
 
         if (!$this->db->hasRows()) {
@@ -260,7 +260,7 @@ class Auth {
             return false;
         }
 
-        $token = $this->getJwtToken($row->id);
+        $token = $this->getJwtToken($row->id, $row->role);
         $this->storeSessionData($token);
 
         $decodedToken = JWT::decode($token, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
