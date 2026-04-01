@@ -67,7 +67,11 @@ class Database {
 
         $substr = strtoupper(substr(ltrim($sql), 0, 6));
 
-        if ($substr == "INSERT" || $substr == "UPDATE" || $substr == "DELETE") {
+        $hasReturning = stripos($sql, 'RETURNING') !== false;
+
+        if ($hasReturning) {
+            return $this->statement->fetchAll(\PDO::FETCH_COLUMN);
+        } else if ($substr == 'INSERT' ||$substr == 'UPDATE' || $substr == 'DELETE') {
             return [$this->statement->rowCount()];
         }else {
             $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
