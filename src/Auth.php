@@ -261,10 +261,11 @@ class Auth {
         }
 
         $token = $this->getJwtToken($row->id, $row->role);
-        $this->storeSessionData($token);
+        $refreshToken = bin2hex(random_bytes(64));
+
+        $this->storeSessionData($token, $refreshToken);
 
         $decodedToken = JWT::decode($token, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
-        $refreshToken = $_COOKIE['athos-refresh'];
 
         if($this->config->get('db_provider') == 'pgsql') { 
             $this->db->query('INSERT INTO {prefix}sessions(id, user_id, aud, refresh_token, expires_at, user_agent, ip_address) VALUES(?, ?, ?, ?, to_timestamp(?), ?, ?)', $decodedToken->sid, $row->id, $decodedToken->aud, $refreshToken, $decodedToken->exp,  $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR']);
@@ -282,7 +283,7 @@ class Auth {
     *
     * @param string $sessionId User session ID
     */
-    private function storeSessionData(string $jwt): void {
+    private function storeSessionData(string $jwt, string $refreshToken): void {
         $host = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
         $host = str_replace('http://', '', $host);
         $host = str_replace('https://', '', $host);
@@ -292,7 +293,7 @@ class Auth {
             'athos',
             $jwt,
             [
-                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600), // 1 hour
                 'path'     => '/',
                 'domain'   => $host,
                 'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
@@ -303,9 +304,9 @@ class Auth {
 
         setcookie(
             'athos-refresh',
-            bin2hex(random_bytes(64)),
+            $refreshToken,
             [
-                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600),
+                'expires'  => time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 30758400), // 1 year
                 'path'     => '/',
                 'domain'   => $host,
                 'secure'   => $this->config->getEnvironmentVariable('jwt_require_secure', true),
