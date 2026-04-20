@@ -203,11 +203,19 @@ class Auth {
         try {
             $decoded = JWT::decode($jwtToken, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
 
-            if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && ($decoded->exp > time() || $allowInvalidated)) {
+            if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && $decoded->exp > time()) {
                 $decoded->userId = $decoded->sub;
                 return $decoded;
             }
         } catch (\Firebase\JWT\ExpiredException $e) {
+            if($allowInvalidated) {
+                $parts = explode('.', $jwtToken);
+                if (count($parts) !== 3) return null;
+                
+                $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')));
+                $payload->userId = $payload->sub;
+                return $payload;
+            }
             return null;
         }
 
