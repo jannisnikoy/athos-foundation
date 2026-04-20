@@ -183,7 +183,7 @@ class Auth {
      *
      * @return object|null The decoded token or null if the token is invalid
     */
-    public function checkToken() {
+    public function checkToken(bool $allowInvalidated = false) {
         if(isset($_COOKIE['athos'])) {
             $aud = 'dashboard';
             $jwtToken = $_COOKIE['athos'];
@@ -203,7 +203,7 @@ class Auth {
         try {
             $decoded = JWT::decode($jwtToken, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
 
-            if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && $decoded->exp > time()) {
+            if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && ($decoded->exp > time() || $allowInvalidated)) {
                 $decoded->userId = $decoded->sub;
                 return $decoded;
             }
