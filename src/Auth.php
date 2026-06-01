@@ -162,9 +162,12 @@ class Auth {
      * Generates a JWT token for a user
      *
      * @param string $userId The user ID
+     * @param string $role The user role
+     * @param string $aud The token audience
+     * @param array|null $additionalFields Extra claim fields to include in the JWT payload
      * @return string The JWT token
      */
-    public function getJwtToken(string $userId, string $role = 'client', string $aud = 'dashboard'): string {
+    public function getJwtToken(string $userId, string $role = 'client', string $aud = 'dashboard', ?array $additionalFields = null): string {
         $arClaim['iss'] = $this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST'];
         $arClaim['iat'] = time();
         $arClaim['exp'] = time() + ($this->config->getEnvironmentVariable('jwt_expiration_time') ?? 3600);
@@ -172,6 +175,10 @@ class Auth {
         $arClaim['sub'] = $userId;
         $arClaim['aud'] = $aud;
         $arClaim['role'] = $role;
+
+        if ($additionalFields !== null) {
+            $arClaim = array_merge($arClaim, $additionalFields);
+        }
 
         $key = file_get_contents($this->config->getEnvironmentVariable('jwt_private_key'));
 
