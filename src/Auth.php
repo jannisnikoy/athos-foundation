@@ -180,9 +180,7 @@ class Auth {
             $arClaim = array_merge($arClaim, $additionalFields);
         }
 
-        $key = file_get_contents($this->config->getEnvironmentVariable('jwt_private_key'));
-
-        return JWT::encode($arClaim, $key, 'RS256');
+        return JWT::encode($arClaim, $this->getPrivateKey(), 'RS256');
       }
 
     /**
@@ -208,7 +206,7 @@ class Auth {
         }
 
         try {
-            $decoded = JWT::decode($jwtToken, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
+            $decoded = JWT::decode($jwtToken, new \Firebase\JWT\Key($this->getPublicKey(), 'RS256'));
 
             if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && $decoded->exp > time()) {
                 $decoded->userId = $decoded->sub;
@@ -232,6 +230,27 @@ class Auth {
     //
     // Private methods
     //
+
+    private function getPrivateKey(): string {
+        $key = \apcu_fetch('jwt_private_key', $success);
+
+        if (!$success) {
+            $key = file_get_contents($this->config->getEnvironmentVariable('jwt_private_key'));
+            \apcu_store('jwt_private_key', $key);
+        }
+
+        return $key;
+    }
+
+    private function getPublicKey(): string {
+        $key = \apcu_fetch('jwt_public_key', $success);
+
+        if (!$success) {
+            $key = file_get_contents($this->config->getEnvironmentVariable('jwt_public_key'));
+            \apcu_store('jwt_public_key', $key);
+        }
+        return $key;
+    }
 
     /**
     * Attempts to validate a user session by cookie
@@ -280,7 +299,7 @@ class Auth {
 
         $this->storeSessionData($token, $refreshToken);
 
-        $decodedToken = JWT::decode($token, new \Firebase\JWT\Key(file_get_contents($this->config->getEnvironmentVariable('jwt_public_key')), 'RS256'));
+        $decodedToken = JWT::decode($token, new \Firebase\JWT\Key($this->getPublicKey(), 'RS256'));
 
         if($this->config->get('db_provider') == 'pgsql') { 
             $this->db->query('INSERT INTO {prefix}sessions(id, user_id, aud, refresh_token, expires_at, user_agent, ip_address) VALUES(?, ?, ?, ?, to_timestamp(?), ?, ?)', $decodedToken->sid, $row->id, $decodedToken->aud, $refreshToken, $decodedToken->exp,  $_SERVER['HTTP_USER_AGENT'], $_SERVER['REMOTE_ADDR']);
