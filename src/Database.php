@@ -51,32 +51,34 @@ class Database {
     * @param array  Optional query parameters
     * @return array Results of the query
     */
-    public function query(string $sql): array {
+    public function query(string $sql, mixed ...$params): array {
         if (!$this->isConnected) $this->connect();
 
         $sql = str_replace('{prefix}', $this->tablePrefix, $sql);
 
         $this->statement = $this->db->prepare($sql);
-        $params = func_get_args();
 
-        for ($i = 1; $i < count($params); $i++) {
-            $this->statement->bindParam($i, $params[$i]);
+        foreach ($params as $i => $value) {
+            $this->statement->bindValue($i + 1, $value, match (true) {
+                is_int($value)  => \PDO::PARAM_INT,
+                is_bool($value) => \PDO::PARAM_BOOL,
+                is_null($value) => \PDO::PARAM_NULL,
+                default         => \PDO::PARAM_STR,
+            });
         }
 
         $this->statement->execute();
 
-        $substr = strtoupper(substr(ltrim($sql), 0, 6));
-
-        $hasReturning = stripos($sql, 'RETURNING') !== false;
-
-        if ($hasReturning) {
-            return $this->statement->fetchAll(\PDO::FETCH_COLUMN);
-        } else if ($substr == 'INSERT' ||$substr == 'UPDATE' || $substr == 'DELETE') {
+        if ($this->statement->columnCount() === 0) {
             return [$this->statement->rowCount()];
-        }else {
-            $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
-            return $this->result;
         }
+
+        if(stripos($sql, 'RETURNING') !== false) {
+            return $this->statement->fetchAll(\PDO::FETCH_COLUMN);
+        }
+
+        $this->result = $this->statement->fetchAll(\PDO::FETCH_OBJ);
+        return $this->result;
     }
 
     /**
