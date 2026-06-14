@@ -132,7 +132,6 @@ class Auth {
     public function getUser(): mixed {
         if ($this->loggedIn) {
             $user = $this->checkToken();
-
             $this->db->query('SELECT * FROM {prefix}users WHERE id=? AND is_active=true AND role=?', $user->userId, $user->role);
             return $this->db->getRow();
         }
@@ -195,10 +194,13 @@ class Auth {
         } else {
             $headers = array_change_key_case(getallheaders());
 
-            if(preg_match('/Bearer\s(\S+)/', $headers['authorization'], $matches)) {
-                $jwtToken = $matches[1];
-                $aud = 'api';
+            if(isset($headers['authorization'])) {
+                if(preg_match('/Bearer\s(\S+)/', $headers['authorization'], $matches)) {
+                    $jwtToken = $matches[1];
+                    $aud = 'api';
+                }
             }
+            
         }
 
         if(!isset($jwtToken)) {
