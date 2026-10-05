@@ -67,9 +67,14 @@ class Module {
                 $template->loadTemplate($this->viewDir, $this->moduleName, $this->moduleAction);
             }
         } else {
-            $module = new Module();
-            $module->loadModule('error');
-            return;
+            if($this->auth->loggedIn()) {
+                $module = new Module();
+                $module->loadModule('error');
+                return;
+            } else {
+                header('Location: ' . $this->config->get('site_root') . '/login');
+                return;
+            }
         }
     }
 
@@ -178,7 +183,6 @@ class Module {
     */
     private function loadDefaultController(): void {
         foreach ($this->config->get('module_dirs') as $directory) {
-
             if(file_exists($directory . '/AthosController.php')) {
                 require_once $directory . '/AthosController.php';
                 $this->loadController('Athos', null, false);
