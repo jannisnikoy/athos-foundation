@@ -30,7 +30,7 @@ class Template {
     * @param string $moduleName Name of the module -- Will be used as view name
     * @param string $moduleAction Optional action name. View will override main view
     */
-    public function loadTemplate(string $viewDir, string $moduleName, string $moduleAction = null): void {
+    public function loadTemplate(string $viewDir, string $moduleName, ?string $moduleAction = null): void {
         if(file_exists($viewDir . $moduleAction . '.html')) {
             $this->render($viewDir . $moduleAction . '.html');
         } else if(file_exists($viewDir . $moduleName . '.html')){
