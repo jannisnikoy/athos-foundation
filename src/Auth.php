@@ -276,8 +276,6 @@ class Auth {
     * @param string $password
     */
     private function attemptLogin(string $username, string $password): bool {
-        $encryptedPassword = password_hash($password, PASSWORD_ARGON2ID);
-
         if($this->config->getEnvironmentVariable('use_email_login')) {
             $this->db->query('SELECT id, email, password, role FROM {prefix}users WHERE email=? AND is_active=true', $username);
         } else {

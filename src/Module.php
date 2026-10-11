@@ -159,7 +159,7 @@ class Module {
                 }
 
                header('Location: ' . $this->config->get('site_root') . '/login' . $returnUri);
-               return;
+               exit();
             }
 
             if (!in_array($this->auth->getUserCredentials(), $acceptedCredentials) && $requiresCredentials) {

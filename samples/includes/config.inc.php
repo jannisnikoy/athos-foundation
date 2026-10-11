@@ -9,5 +9,6 @@
     $auth 	= new \Athos\Foundation\Auth();
 
     $smarty = new Smarty();
+    $smarty->enableSecurity();
     $smarty->setCompileDir($config->get('cache_dir'));
 ?>

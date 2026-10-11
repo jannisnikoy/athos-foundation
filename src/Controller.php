@@ -45,11 +45,11 @@ class Controller {
     /**
     * Determines the access levels permitted for a module.
     *
-    * Default: ['admin']
+    * Default: ['client']
     *
     * @return array Array of accepted credentials
     */
     public function acceptedCredentials(): array {
-        return ['admin'];
+        return ['client'];
     }
 }

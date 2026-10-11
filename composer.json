@@ -18,7 +18,7 @@
         }
     },
     "require": {
-        "smarty/smarty": "^4.3",
+        "smarty/smarty": "^5.5.1",
         "jchook/uuid": "^1.0"
     }
 }

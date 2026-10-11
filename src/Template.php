@@ -14,14 +14,12 @@ namespace Athos\Foundation;
 
 class Template {
     private $config;
-    private $auth;
     private $smarty;
 
     public function __construct() {
-        global $config, $auth, $smarty;
+        global $config, $smarty;
 
         $this->config = $config;
-        $this->auth = $auth;
         $this->smarty = $smarty;
     }
 
