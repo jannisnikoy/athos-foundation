@@ -29,7 +29,17 @@ class Config {
             exit();
         }
 
-        $this->config = json_decode(file_get_contents($configFile));
+        $mtime = filemtime($configFile);
+        $cached = \apcu_fetch('athos_config_' . $mtime, $success);
+        if ($success) { 
+            $this->config = $cached; 
+        }
+        else { 
+            $this->config = json_decode(file_get_contents($configFile));
+            \apcu_store('athos_config_' . $mtime, $this->config); 
+        }
+
+
 
         if(file_exists(SITE_PATH . '/version.json')) {
             $this->version = json_decode(file_get_contents(SITE_PATH . '/version.json'));

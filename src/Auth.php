@@ -18,6 +18,7 @@ class Auth {
     private $config;
     private $db;
     private $loggedIn;
+    private ?object $decodedToken = null;
 
     function __construct() {
         global $config, $db;
@@ -188,6 +189,10 @@ class Auth {
      * @return object|null The decoded token or null if the token is invalid
     */
     public function checkToken(bool $allowInvalidated = false) {
+        if($this->decodedToken !== null) {
+            return $this->decodedToken;
+        }
+
         if(isset($_COOKIE['athos'])) {
             $aud = 'dashboard';
             $jwtToken = $_COOKIE['athos'];
@@ -212,6 +217,7 @@ class Auth {
 
             if($decoded->aud == $aud && $decoded->iss == ($this->config->getEnvironmentVariable('jwt_host') ?? $_SERVER['HTTP_HOST']) && $decoded->exp > time()) {
                 $decoded->userId = $decoded->sub;
+                $this->decodedToken = $decoded;
                 return $decoded;
             }
         } catch (\Firebase\JWT\ExpiredException $e) {
@@ -221,6 +227,7 @@ class Auth {
                 
                 $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')));
                 $payload->userId = $payload->sub;
+                $this->decodedToken = $payload;
                 return $payload;
             }
             return null;

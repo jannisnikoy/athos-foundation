@@ -135,7 +135,7 @@ class Database {
     * @return bool true if connection is succesful.
     */
     private function connect(): bool {
-        $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass);
+        $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass, array(\PDO::ATTR_PERSISTENT => true));
 
         if (!$this->db) {
             throw new Error('An error occurred while connecting to the database: >>');
