@@ -136,7 +136,7 @@ class Database {
     */
     private function connect(): bool {
         global $config;
-        $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass, array(\PDO::ATTR_PERSISTENT => $config->get('dbPersistent', false)));
+        $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass, array(\PDO::ATTR_PERSISTENT => $config->getEnvironmentVariable('dbPersistent', false)));
 
         if (!$this->db) {
             throw new Error('An error occurred while connecting to the database: >>');
