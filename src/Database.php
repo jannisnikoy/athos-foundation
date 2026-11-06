@@ -135,6 +135,7 @@ class Database {
     * @return bool true if connection is succesful.
     */
     private function connect(): bool {
+        global $config;
         $this->db = new \PDO($this->provider . ':host=' . $this->host . ';dbname=' . $this->name, $this->user, $this->pass, array(\PDO::ATTR_PERSISTENT => $config->get('dbPersistent', false)));
 
         if (!$this->db) {
